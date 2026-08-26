@@ -1,8 +1,13 @@
 <!--
 SYNC IMPACT REPORT
-Version change: (uninitialized template) → 1.0.0
-Bump rationale: MAJOR-equivalent initial ratification. The file previously contained only
-unfilled template placeholders, so this is the first governing version rather than an amendment.
+Version change: 1.0.0 → 1.1.0
+Bump rationale: MINOR. Added a Development Workflow rule requiring lint and style standards to be
+configured before the first feature commit and enforced as blocking CI checks. New obligation, no
+existing principle redefined or removed.
+
+Previous: (uninitialized template) → 1.0.0, MAJOR-equivalent initial ratification. The file
+previously contained only unfilled template placeholders, so that was the first governing version
+rather than an amendment.
 
 Modified principles: none (no prior principles existed)
 Added sections:
@@ -123,6 +128,10 @@ clicker consented to nothing, and the paying customer's campaign data is theirs,
   `<TICKET-ID>/<kebab-case-description>` when a tracker ticket exists.
 - Simplicity is the default. An abstraction with one implementation, configuration for a value that
   never changes, or scaffolding built for an unrequested future MUST be removed in review.
+- Style and lint standards MUST be configured before the first feature commit and enforced as
+  blocking CI checks from the first pull request. A standard introduced later produces a mechanical
+  diff that buries real review, and leaves every intervening pull request reviewed against a rule
+  nothing was checking.
 
 ## Governance
 
@@ -144,4 +153,4 @@ condition; an undocumented violation is a defect.
 Compliance is reviewed whenever a new feature specification is written, and the Performance &
 Reliability Standards are re-validated by the load test before any release.
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-26 | **Last Amended**: 2026-08-26
+**Version**: 1.1.0 | **Ratified**: 2026-08-26 | **Last Amended**: 2026-08-26

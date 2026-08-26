@@ -39,13 +39,14 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 - [ ] T004 Write `docker-compose.yml` at repository root with postgres:17, redis:7.4, backend, frontend, sidekiq services
 - [ ] T005 [P] Configure RSpec, FactoryBot, and DatabaseCleaner in `backend/spec/rails_helper.rb`
 - [ ] T006 [P] Configure Vitest and Playwright in `frontend/vitest.config.ts` and `frontend/playwright.config.ts`
-- [ ] T007 [P] Add CI workflow running both suites in `.github/workflows/ci.yml`
+- [ ] T099 [P] RuboCop configuration in `backend/.rubocop.yml` and ESLint + Prettier configuration in `frontend/eslint.config.mjs` — established before any feature code exists, so no retrofit diff is ever needed
+- [ ] T007 [P] Add CI workflow in `.github/workflows/ci.yml` running both test suites **and both linters as blocking checks** (depends on T099 — a lint config CI does not enforce is decoration)
 - [ ] T008 [P] Write `.gitignore` covering Rails, Node, and `.claude/` per the Spec Kit security note
 - [ ] T009 Set `maxmemory` and `maxmemory-policy allkeys-lru` in `docker-compose.yml` redis service, and put Sidekiq on a separate Redis database index (Principle IV, research.md D9)
 - [ ] T010 [P] Add `backend/config/initializers/redis.rb` with a connection pool sized for Puma thread count
 - [ ] T104 [P] Install and configure the frontend libraries from research.md D15 — `npx shadcn@latest init`, plus `zod`, `react-hook-form`, `@hookform/resolvers`, `@tanstack/react-query` — in `frontend/package.json` and `frontend/components.json`
 
-**Checkpoint**: `docker compose up` yields a running stack; `bundle exec rspec` and `npm test` pass with zero tests.
+**Checkpoint**: `docker compose up` yields a running stack; `bundle exec rspec` and `npm test` pass with zero tests; `rubocop` and `eslint` pass clean and are blocking in CI.
 
 ---
 
@@ -211,11 +212,13 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
+**Note**: There is no lint-cleanup task here. Linting moved to Phase 1 (T099) and is a
+blocking CI check from PR 1, so style debt never accumulates to be cleaned up.
+
 - [ ] T096 [P] Daily 7-day click purge job in `backend/app/jobs/clicks/purge_job.rb` (data-model.md retention rule)
 - [ ] T097 Run the full `quickstart.md` procedure end to end and correct any drift
 - [ ] T111 Timed walkthroughs recorded in `load/results/usability.md`: an unaided first-time user creating their first link (SC-003, target under 2 minutes) and an administrator locating and banning a reported link (SC-010, target under 1 minute)
 - [ ] T098 [P] Playwright end-to-end test covering register → create → redirect → count in `frontend/tests/e2e/`
-- [ ] T099 [P] RuboCop and ESLint configuration in `backend/.rubocop.yml` and `frontend/eslint.config.mjs`, with a clean pass across both trees
 - [ ] T100 Security review of `backend/app/services/urls/safety_validator.rb` against a fresh bypass list, and of session cookie flags in `backend/config/initializers/session_store.rb`
 - [ ] T101 Re-run both load tests on final code and refresh `load/results/`
 - [ ] T102 Write `README.md` leading with the naive-versus-cached numbers and the twelve explainable decisions from spec.md section 10
@@ -241,7 +244,7 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 ### Parallel Opportunities
 
-- Phase 1: T003, T005, T006, T007, T008, T010 all parallel
+- Phase 1: T003, T005, T006, T008, T010, T099, T104 all parallel; T007 (CI) runs after T099
 - Phase 2: T011, T012, T014, T015, T016, T017, T019, T020, T021 all parallel (T013 alone, since links is the busiest schema)
 - Phase 3A: T023–T026 (specs) parallel; T028, T029, T030 parallel; T037 parallel
 - Phase 3C: T045–T048 parallel, then T049–T061 largely sequential on the middleware file
@@ -258,7 +261,7 @@ One PR per phase, seven PRs plus polish. Not one per task.
 
 | PR | Phase | Tasks | Demonstrable at merge |
 |---|---|---|---|
-| 1 | Setup | T001–T010, T104 | stack runs, suites green |
+| 1 | Setup | T001–T010, T099, T104 | stack runs, suites green, linters blocking |
 | 2 | Foundational | T011–T022 | schema migrates, models load |
 | 3 | US1 / 3A | T023–T039, T105 | links create and redirect, slowly |
 | 4 | US1 / 3B | T040–T044 | **a committed baseline number** |
@@ -266,7 +269,7 @@ One PR per phase, seven PRs plus polish. Not one per task.
 | 6 | US2 | T062–T071, T106–T108 | dashboard with live counts |
 | 7 | US3 | T072–T081 | edit takes effect immediately |
 | 8 | US4 | T082–T095, T109, T110 | moderation works |
-| 9 | Polish | T096–T103, T111 | README with the headline result |
+| 9 | Polish | T096–T098, T100–T103, T111 | README with the headline result |
 
 PR 4 contains no application code. It will look like a trivial PR and it is the most important one in the sequence.
 

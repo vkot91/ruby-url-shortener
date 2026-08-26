@@ -147,9 +147,11 @@ k6 run load/enumerate.js                             # random non-existent codes
 ## Test suites
 
 ```bash
-cd backend  && bundle exec rspec
-cd frontend && npm test && npx playwright test
+cd backend  && bundle exec rspec && bundle exec rubocop
+cd frontend && npm test && npm run lint && npx playwright test
 ```
+
+All four are blocking CI checks from PR 1 onward.
 
 The US3 cache-invalidation check above must exist as an automated integration test, not only as a
 manual step here — SC-006 names it explicitly.

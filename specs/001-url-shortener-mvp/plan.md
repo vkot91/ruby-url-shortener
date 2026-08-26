@@ -42,6 +42,9 @@ broker (logically separated by database index)
 **Testing**: RSpec + FactoryBot for the backend, Vitest + Testing Library for the frontend,
 Playwright for one end-to-end path, k6 for the load test
 
+**Quality gates**: RuboCop and ESLint + Prettier, configured in Phase 1 and blocking in CI from the
+first pull request
+
 **Target Platform**: Linux containers; single-host Docker Compose for the reference benchmark
 
 **Project Type**: Web application — separate backend and frontend
@@ -165,9 +168,16 @@ scoped to demonstrable work; `tasks.md` carries the task-level breakdown and the
 
 ### Phase 1+2 — Setup and Foundation (tasks.md Phases 1 and 2)
 
-Docker Compose (Postgres, Redis, backend, frontend, Sidekiq), Rails and Next.js skeletons, CI
-running both test suites. No feature behaviour. **Exit**: `docker compose up` gives a running stack
-and green suites.
+Docker Compose (Postgres, Redis, backend, frontend, Sidekiq), Rails and Next.js skeletons, RuboCop
+and ESLint configured, and CI running both test suites plus both linters as blocking checks. No
+feature behaviour.
+
+Linting is established here rather than at polish time on purpose: a style config introduced after
+the code exists produces a large mechanical diff that buries real review, and every intervening pull
+request is reviewed against a standard that is not yet enforced. Configured first and enforced by
+CI from PR 1, style debt never accumulates.
+
+**Exit**: `docker compose up` gives a running stack, green suites, and clean blocking linters.
 
 ### Phase 3A — Naive redirect (US1, partial)
 
@@ -212,8 +222,9 @@ can be found and banned, and the next visitor sees the warning page.
 
 ### Phase 7 — Polish
 
-Click retention purge, quickstart validation, end-to-end test, linting, security review, final load
-test re-run, and the README that leads with the naive-versus-cached numbers. **Exit**: every
+Click retention purge, quickstart validation, end-to-end test, security review, final load test
+re-run, and the README that leads with the naive-versus-cached numbers. No lint cleanup — that is
+enforced from Phase 1 onward. **Exit**: every
 Constitution Check gate above re-verified against the built system.
 
 ## Complexity Tracking
