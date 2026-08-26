@@ -1,0 +1,311 @@
+openapi: 3.1.0
+info:
+  title: URL Shortener API
+  version: 1.0.0-mvp
+  description: |
+    JSON API on the app domain, consumed by the Next.js dashboard and admin area.
+    The public redirect surface is a separate contract; see contracts/redirect.md.
+    Authentication is a session cookie (httpOnly, Secure, SameSite=Lax) — see research.md D10.
+
+servers:
+  - url: https://app.example.com/api/v1
+
+tags:
+  - name: auth
+  - name: links
+  - name: admin
+
+paths:
+  /registrations:
+    post:
+      tags: [auth]
+      summary: Register an account (FR-001)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+      responses:
+        '201': { description: Created; session cookie set }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /sessions:
+    post:
+      tags: [auth]
+      summary: Sign in (FR-001)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '201': { description: Session cookie set }
+        '401': { description: Invalid credentials }
+    delete:
+      tags: [auth]
+      summary: Sign out
+      responses:
+        '204': { description: Session revoked }
+
+  /links:
+    get:
+      tags: [links]
+      summary: List the caller's links (FR-002, FR-023)
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 25, maximum: 100 } }
+      responses:
+        '200':
+          description: Only links owned by the caller. Never another account's.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  links:
+                    type: array
+                    items: { $ref: '#/components/schemas/Link' }
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      tags: [links]
+      summary: Create a link (FR-005 through FR-012)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [destination_url]
+              properties:
+                destination_url: { type: string, format: uri }
+                name: { type: string, maxLength: 120 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Link' }
+        '422':
+          description: |
+            Rejected. error.code distinguishes the reason so the UI can explain it:
+            invalid_url, unsupported_scheme, private_address, self_referential,
+            blocked_domain, link_limit_reached.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Hourly creation limit exceeded (FR-004). Existing redirects are unaffected.
+
+  /links/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [links]
+      summary: Fetch one link
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Link' }
+        '404':
+          description: Not found, or owned by another account - indistinguishable by design (FR-002)
+    patch:
+      tags: [links]
+      summary: Edit destination or name (FR-025, FR-026, FR-027)
+      description: |
+        code is absent from the request schema deliberately - it cannot be changed (FR-026).
+        Sending it yields 422 rather than being silently ignored.
+        The cache entry is invalidated before this response returns (Principle IV).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                destination_url: { type: string, format: uri }
+                name: { type: string, maxLength: 120 }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Link' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '404': { description: Not found or not owned }
+    delete:
+      tags: [links]
+      summary: Soft-delete (FR-028, FR-029)
+      responses:
+        '204': { description: Statistics retained; code not released; cache invalidated }
+        '404': { description: Not found or not owned }
+
+  /admin/links:
+    get:
+      tags: [admin]
+      summary: Search any link by code or destination (FR-030)
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Matches
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  links:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminLink' }
+        '403': { description: Caller is not an administrator (FR-003) }
+
+  /admin/links/{id}/ban:
+    post:
+      tags: [admin]
+      summary: Ban a link (FR-031)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Cache invalidated; next visitor sees the warning page }
+        '403': { description: Not an administrator }
+
+  /admin/accounts/{id}/ban:
+    post:
+      tags: [admin]
+      summary: Ban an account and all its links (FR-031)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Every cached link of the account is invalidated }
+        '403': { description: Not an administrator }
+
+  /admin/reports:
+    get:
+      tags: [admin]
+      summary: Moderation queue (FR-033)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, actioned, dismissed], default: pending }
+      responses:
+        '200': { description: Reports, oldest first }
+        '403': { description: Not an administrator }
+
+  /admin/blocked_domains:
+    get:
+      tags: [admin]
+      summary: List the blocklist (FR-032)
+      responses:
+        '200': { description: Current blocklist }
+        '403': { description: Not an administrator }
+    post:
+      tags: [admin]
+      summary: Add a blocked domain (FR-032)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domain]
+              properties:
+                domain: { type: string }
+                reason: { type: string }
+      responses:
+        '201': { description: Added. Existing links are not retroactively banned. }
+        '403': { description: Not an administrator }
+
+  /admin/health:
+    get:
+      tags: [admin]
+      summary: Operational metrics (FR-035)
+      description: |
+        Deliberately contains no customer marketing analytics. Principle V keeps those
+        behind an audited support mode, which is out of MVP scope.
+      responses:
+        '200':
+          description: Metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cache_hit_ratio:
+                    type: number
+                    description: proportion over the last hour; the headline metric
+                  redirect_p50_ms: { type: number }
+                  redirect_p99_ms: { type: number }
+                  redirects_per_second: { type: number }
+                  click_buffer_depth: { type: integer }
+                  click_flush_lag_seconds: { type: number }
+                  redis_memory_used_bytes: { type: integer }
+        '403': { description: Not an administrator }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: _session
+
+  schemas:
+    Link:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string, description: immutable (FR-026) }
+        short_url: { type: string, format: uri }
+        destination_url: { type: string, format: uri }
+        name: { type: string, nullable: true }
+        clicks_count:
+          type: integer
+          description: Up to 30 seconds behind reality (SC-009) - batch-flushed, not live.
+        created_at: { type: string, format: date-time }
+
+    AdminLink:
+      allOf:
+        - $ref: '#/components/schemas/Link'
+        - type: object
+          properties:
+            account_id: { type: integer }
+            banned_at: { type: string, format: date-time, nullable: true }
+            deleted_at: { type: string, format: date-time, nullable: true }
+
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+security:
+  - sessionCookie: []

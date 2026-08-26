@@ -1,0 +1,21 @@
+# Spec Kit local state (generated / per-machine)
+.specify/extensions/.cache/
+.specify/extensions/.registry
+.specify/feature.json
+
+# Claude Code local overrides
+.claude/settings.local.json
+
+# Ruby
+/.bundle/
+/vendor/bundle/
+/log/*
+/tmp/*
+/storage/*
+/public/assets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
