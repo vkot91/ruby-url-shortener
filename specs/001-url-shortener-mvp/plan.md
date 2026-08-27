@@ -20,7 +20,7 @@ then measured with the identical harness. Both implementations remain runnable b
 
 ## Technical Context
 
-**Language/Version**: Ruby 3.4 (backend), TypeScript 5.7 on Node 22 LTS (frontend)
+**Language/Version**: Ruby 3.4 (backend), TypeScript 5.7 on Node 24 LTS (frontend)
 
 **Primary Dependencies**
 

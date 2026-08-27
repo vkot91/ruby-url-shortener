@@ -36,6 +36,10 @@ jobs:
       # "packageManager" field; it must run before setup-node so the pnpm store
       # cache resolves.
       - uses: pnpm/action-setup@v4
+        with:
+          # Action inputs are not affected by defaults.run.working-directory,
+          # so the path to the package.json holding "packageManager" is explicit.
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
           node-version-file: .tool-versions
@@ -94,6 +98,10 @@ jobs:
       # "packageManager" field; it must run before setup-node so the pnpm store
       # cache resolves.
       - uses: pnpm/action-setup@v4
+        with:
+          # Action inputs are not affected by defaults.run.working-directory,
+          # so the path to the package.json holding "packageManager" is explicit.
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
           node-version-file: .tool-versions

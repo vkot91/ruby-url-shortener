@@ -33,7 +33,7 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 **Purpose**: A running stack and green empty suites. No feature behaviour.
 
-- [X] T001 Create `.tool-versions` pinning `ruby 3.4.8` and `nodejs 22` at repository root
+- [X] T001 Create `.tool-versions` pinning `ruby 3.4.8` and `nodejs 24.19.0` at repository root
 - [X] T002 Generate API-only Rails 8 app in `backend/` with `--api --database=postgresql --skip-solid`
 - [X] T003 [P] Generate Next.js 15 app in `frontend/` with App Router, TypeScript, Tailwind 4
 - [X] T004 Write `docker-compose.yml` at repository root with postgres:17, redis:7.4, backend, frontend, sidekiq services
