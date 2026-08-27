@@ -56,18 +56,20 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T011 [P] Migration for `accounts` table per data-model.md in `backend/db/migrate/` (citext email unique, role check, plan check, banned_at)
-- [ ] T012 [P] Migration for `sessions` table in `backend/db/migrate/` (token_digest unique, FK cascade)
-- [ ] T013 Migration for `links` table in `backend/db/migrate/` — unique index on `code`, partial index `(account_id, created_at DESC) WHERE deleted_at IS NULL`, gin_trgm index on `destination_url`
-- [ ] T014 [P] Migration for `clicks` table in `backend/db/migrate/` — deliberately no IP column (FR-024, Principle V)
-- [ ] T015 [P] Migration for `blocked_domains` table in `backend/db/migrate/`
-- [ ] T016 [P] Migration for `reports` table in `backend/db/migrate/` with `(status, created_at)` index
-- [ ] T017 [P] `Account` model with `has_secure_password` and role predicates in `backend/app/models/account.rb`
-- [ ] T018 `Session` model and `Authentication` controller concern in `backend/app/models/session.rb` and `backend/app/controllers/concerns/authentication.rb`
-- [ ] T019 [P] `Link` model with associations and scopes (`active`, `owned_by`) in `backend/app/models/link.rb`
-- [ ] T020 [P] JSON error envelope and rescue_from handlers in `backend/app/controllers/concerns/error_handling.rb` matching the `Error` schema in contracts/openapi.yaml
-- [ ] T021 [P] Structured single-line request logging in `backend/config/initializers/logging.rb` (the redirect path is capped at one line — contracts/redirect.md)
-- [ ] T022 Define `/api/v1` namespace and reserved top-level paths in `backend/config/routes.rb` (FR-012)
+- [X] T011 [P] Migration for `accounts` table per data-model.md in `backend/db/migrate/` (citext email unique, role check, plan check, banned_at)
+- [X] T012 [P] Migration for `sessions` table in `backend/db/migrate/` (token_digest unique, FK cascade)
+- [X] T013 Migration for `links` table in `backend/db/migrate/` — unique index on `code`, partial index `(account_id, created_at DESC) WHERE deleted_at IS NULL`, gin_trgm index on `destination_url`
+- [X] T014 [P] Migration for `clicks` table in `backend/db/migrate/` — deliberately no IP column (FR-024, Principle V)
+- [X] T015 [P] Migration for `blocked_domains` table in `backend/db/migrate/`
+- [X] T016 [P] Migration for `reports` table in `backend/db/migrate/` with `(status, created_at)` index
+- [X] T017 [P] `Account` model with `has_secure_password` and role predicates in `backend/app/models/account.rb`
+- [X] T018 `RefreshToken` model, `Auth::AccessToken` (HS256 encode/decode with the algorithm pinned), and `Auth::RefreshTokens` (issue, rotate, revoke family) in `backend/app/models/refresh_token.rb` and `backend/app/services/auth/` (research.md D10)
+- [X] T114 Bearer-token `Authentication` controller concern in `backend/app/controllers/concerns/authentication.rb` — decodes the claims, loads `current_account` lazily, and distinguishes `token_expired` from `unauthenticated`
+- [X] T115 Auth service specs in `backend/spec/services/auth/` covering the `alg: none` and wrong-secret attacks, expiry, rotation, and **reuse detection revoking the family**; plus request specs in `backend/spec/requests/foundation_spec.rb` asserting an authenticated request issues zero queries and that Rails sets no cookie on any path (D10, FR-015)
+- [X] T019 [P] `Link` model with associations and scopes (`active`, `owned_by`) in `backend/app/models/link.rb`
+- [X] T020 [P] JSON error envelope and rescue_from handlers in `backend/app/controllers/concerns/error_handling.rb` matching the `Error` schema in contracts/openapi.yaml
+- [X] T021 [P] Structured single-line request logging in `backend/config/initializers/logging.rb` (the redirect path is capped at one line — contracts/redirect.md)
+- [X] T022 Define `/api/v1` namespace and reserved top-level paths in `backend/config/routes.rb` (FR-012)
 
 **Checkpoint**: Schema migrates cleanly; models load; user story work can begin.
 
@@ -83,12 +85,14 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 ### 3A — Naive implementation (no cache)
 
-- [ ] T023 [P] [US1] Request spec for registration and sign-in in `backend/spec/requests/api/v1/auth_spec.rb`
+- [ ] T023 [P] [US1] Request spec for registration and sign-in in `backend/spec/requests/api/v1/auth_spec.rb` — asserts the token pair shape and that no `Set-Cookie` is emitted
 - [ ] T024 [P] [US1] Unit spec for URL normalisation edge cases in `backend/spec/services/urls/normalizer_spec.rb`
 - [ ] T025 [P] [US1] Unit spec for SSRF rejection (private, loopback, link-local, self-referential, non-http scheme) in `backend/spec/services/urls/safety_validator_spec.rb`
 - [ ] T026 [P] [US1] Unit spec asserting code allocation retries on `RecordNotUnique` and never issues an existence query in `backend/spec/services/links/code_generator_spec.rb`
-- [ ] T027 [US1] `Api::V1::RegistrationsController` and `Api::V1::SessionsController` in `backend/app/controllers/api/v1/` per contracts/openapi.yaml (FR-001)
-- [ ] T112 [US1] `rate_limit` on `Api::V1::RegistrationsController#create` and `Api::V1::SessionsController#create` — per hashed IP on both, plus per hashed email on sign-in (FR-036)
+- [ ] T027 [US1] `Api::V1::RegistrationsController` and `Api::V1::SessionsController` in `backend/app/controllers/api/v1/` returning a `TokenPair` per contracts/openapi.yaml (FR-001)
+- [ ] T116 [US1] `Api::V1::Auth::RefreshController#create` in `backend/app/controllers/api/v1/auth/refresh_controller.rb` — rotates the pair, returns `invalid_refresh_token` or `token_reuse_detected` on 401 (contracts/openapi.yaml `/auth/refresh`)
+- [ ] T117 [P] [US1] Request spec for the full token lifecycle in `backend/spec/requests/api/v1/token_lifecycle_spec.rb`: sign in, refresh, confirm the old token is dead, replay it, confirm the family is gone and the client must sign in again
+- [ ] T112 [US1] `rate_limit` on `Api::V1::RegistrationsController#create`, `Api::V1::SessionsController#create`, and the refresh endpoint — per hashed IP on all three, plus per hashed email on sign-in (FR-036)
 - [ ] T113 [P] [US1] Request spec asserting the auth limiters return 429 and that the refusal body is indistinguishable for a registered and an unregistered address, in `backend/spec/requests/api/v1/auth_rate_limit_spec.rb` (FR-036)
 - [ ] T028 [P] [US1] `Urls::Normalizer` in `backend/app/services/urls/normalizer.rb` (FR-008)
 - [ ] T029 [P] [US1] `Urls::SafetyValidator` in `backend/app/services/urls/safety_validator.rb` — resolves DNS before accepting, re-usable on edit (FR-006, research.md D11)
@@ -152,8 +156,9 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 - [ ] T064 [US2] Request spec asserting account B never sees account A's links in `backend/spec/requests/api/v1/links_isolation_spec.rb` (FR-002)
 - [ ] T065 [US2] Integration test asserting the counter reaches N within 30 seconds of the last click in `backend/spec/integration/click_counting_spec.rb` (SC-009)
 - [ ] T066 [US2] Integration test asserting redirects still succeed with Redis stopped in `backend/spec/integration/redis_outage_spec.rb` (SC-008)
-- [ ] T067 [P] [US2] Typed API client with `credentials: include` in `frontend/src/lib/api.ts` (D10)
-- [ ] T068 [P] [US2] Sign-up and sign-in pages in `frontend/src/app/(auth)/`
+- [ ] T067 [P] [US2] Typed API client in `frontend/src/lib/api.ts` — holds the access token in memory, sends `Authorization: Bearer`, and on a `token_expired` 401 refreshes once through the BFF and retries the original request exactly once (D10)
+- [ ] T118 [US2] BFF route handlers in `frontend/src/app/api/auth/` — sign-in, sign-out, and refresh proxied to Rails, with the refresh token kept in an httpOnly cookie on the Next.js origin and never returned to the browser (D10)
+- [ ] T068 [P] [US2] Sign-up and sign-in pages in `frontend/src/app/(auth)/`, posting to the BFF handlers from T118 rather than to Rails directly
 - [ ] T107 [P] [US2] TanStack Query provider scoped to the dashboard segment in `frontend/src/app/(dashboard)/providers.tsx` — used for click-count polling only, not as the app's data layer (D15)
 - [ ] T069 [US2] Link list page showing short URL, destination, created date, click count in `frontend/src/app/(dashboard)/links/page.tsx`
 - [ ] T108 [US2] Poll click counts on a 30-second `refetchInterval` in `frontend/src/app/(dashboard)/links/use-links.ts` (SC-009)
@@ -200,6 +205,7 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 - [ ] T110 [US4] Maintain `account:<id>:codes` on the cache-miss populate path in `backend/app/services/cache/link_cache.rb` — `SADD` plus 24h `EXPIRE`, miss path only so the hot path stays at one `GETEX` (research.md D14)
 - [ ] T088 [US4] `Admin::AccountsController#ban` invalidating every cached link via `SMEMBERS` + pipelined `DEL` over `account:<id>:codes`, never `SCAN`, in `backend/app/controllers/api/v1/admin/accounts_controller.rb` (FR-031, D14)
 - [ ] T089 [US4] Spec asserting an account ban takes effect on the next visitor for all its links, with no TTL wait, in `backend/spec/requests/api/v1/admin/account_ban_spec.rb` (Principle IV)
+- [ ] T119 [US4] Spec asserting a banned account's refresh tokens are all revoked and that its access token stops working within `Auth::AccessToken::LIFETIME`, in `backend/spec/requests/api/v1/admin/account_ban_spec.rb` — the recorded D10 window, asserted rather than assumed
 - [ ] T109 [P] [US4] `Admin::ReportsController#index` with status filter, oldest first, in `backend/app/controllers/api/v1/admin/reports_controller.rb` (FR-033; the queue page in T094 has nothing to call without it)
 - [ ] T090 [P] [US4] `Admin::BlockedDomainsController` index and create in `backend/app/controllers/api/v1/admin/blocked_domains_controller.rb` (FR-032)
 - [ ] T091 [US4] Wire the blocklist check into `Links::Creator` and `Links::Updater` (FR-007)
@@ -221,7 +227,7 @@ blocking CI check from PR 1, so style debt never accumulates to be cleaned up.
 - [ ] T097 Run the full `quickstart.md` procedure end to end and correct any drift
 - [ ] T111 Timed walkthroughs recorded in `load/results/usability.md`: an unaided first-time user creating their first link (SC-003, target under 2 minutes) and an administrator locating and banning a reported link (SC-010, target under 1 minute)
 - [ ] T098 [P] Playwright end-to-end test covering register → create → redirect → count in `frontend/tests/e2e/`
-- [ ] T100 Security review of `backend/app/services/urls/safety_validator.rb` against a fresh bypass list, and of session cookie flags in `backend/config/initializers/session_store.rb`
+- [ ] T100 Security review of `backend/app/services/urls/safety_validator.rb` against a fresh bypass list, and of the token surface: algorithm pinning, claim validation, refresh rotation, and the BFF cookie flags
 - [ ] T101 Re-run both load tests on final code and refresh `load/results/`
 - [ ] T102 Write `README.md` leading with the naive-versus-cached numbers and the twelve explainable decisions from spec.md section 10
 - [ ] T103 Verify every Constitution Check gate in `specs/001-url-shortener-mvp/plan.md` still passes against the built system, recording the result in `load/results/constitution-check.md`
@@ -264,13 +270,13 @@ One PR per phase, seven PRs plus polish. Not one per task.
 | PR | Phase | Tasks | Demonstrable at merge |
 |---|---|---|---|
 | 1 | Setup | T001–T010, T099, T104 | stack runs, suites green, linters blocking |
-| 2 | Foundational | T011–T022 | schema migrates, models load |
-| 3 | US1 / 3A | T023–T039, T105 | links create and redirect, slowly |
+| 2 | Foundational | T011–T022, T114, T115 | schema migrates, models load, bearer auth verified |
+| 3 | US1 / 3A | T023–T039, T105, T116, T117 | links create and redirect, slowly |
 | 4 | US1 / 3B | T040–T044 | **a committed baseline number** |
 | 5 | US1 / 3C | T045–T061 | the same test, a different number |
-| 6 | US2 | T062–T071, T106–T108 | dashboard with live counts |
+| 6 | US2 | T062–T071, T106–T108, T118 | dashboard with live counts |
 | 7 | US3 | T072–T081 | edit takes effect immediately |
-| 8 | US4 | T082–T095, T109, T110 | moderation works |
+| 8 | US4 | T082–T095, T109, T110, T119 | moderation works |
 | 9 | Polish | T096–T098, T100–T103, T111 | README with the headline result |
 
 PR 4 contains no application code. It will look like a trivial PR and it is the most important one in the sequence.

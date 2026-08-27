@@ -40,5 +40,10 @@ module Backend
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # No cookie middleware, deliberately. Authentication is bearer-token only
+    # (research.md D10), so nothing in this application can set a cookie even by
+    # accident — which turns the redirect's "no Set-Cookie" guarantee (FR-015,
+    # Principle V) from an assertion into a structural fact.
   end
 end

@@ -154,20 +154,75 @@ removes. Redis is already a hard dependency, so Sidekiq adds a gem, not a servic
 - *A plain loop in a rake task*: fewer dependencies still, but no retries, no concurrency control,
   no visibility. Rejected — the flush job is on the correctness path for customer-visible numbers.
 
-## D10. Session cookies, not JWT, between Next.js and Rails
+## D10. JWT access tokens with opaque rotating refresh tokens
 
-**Decision**: Rails 8 built-in authentication (`has_secure_password` + sessions table), httpOnly
+**Status**: Supersedes the original D10 ("Session cookies, not JWT"), which is preserved below.
+
+**Decision**: Bearer-token authentication. A short-lived JWT access token (HS256, 15 minutes,
+claims `sub`/`role`/`jti`/`iat`/`exp`) is verified by signature alone and sent as
+`Authorization: Bearer`. Refresh is an opaque 32-byte random token — deliberately *not* a JWT —
+stored as a SHA-256 digest in `refresh_tokens`, rotated on every use, grouped into a family per
+sign-in, with reuse detection revoking the family. Rails sets no cookie at all; the Next.js BFF
+holds the refresh token in an httpOnly cookie on its own origin.
+
+**Rationale**: Four drivers, all of which the original decision failed to serve:
+
+1. *Non-browser clients.* A mobile app or CLI is a stated future client, and cookie sessions serve
+   them badly. A bearer token is the same credential for every client type.
+2. *Demonstrable correctness.* Refresh rotation with reuse detection is a thing this project sets
+   out to build properly. Rotation without detection changes the token but notices nothing when a
+   copy is used behind your back.
+3. *Stateless verification.* An authenticated API request touches neither Postgres nor Redis. The
+   claims are the proof, and `current_account` is loaded lazily so only endpoints that need the row
+   pay for it.
+4. *Cross-origin friction.* Frontend and API are separate origins; a header sidesteps the
+   `SameSite`/CORS negotiation a session cookie requires.
+
+**The cost, accepted explicitly**: revocation is no longer instant. A ban revokes every refresh
+token of that account immediately, but an already-issued access token keeps working until it
+expires — up to 15 minutes. The same window applies to a role change, since `role` is a claim.
+
+This is a real trade and it is taken deliberately:
+
+- It does not touch FR-031. That requirement is about the *visitor* on the redirect path, which is
+  served by cache invalidation (D2, D14) and is unaffected by how creators authenticate.
+- The residual exposure is a banned creator retaining API access for one access-token lifetime.
+  Shortening the lifetime narrows it at the cost of refresh round trips.
+- The alternative — a Redis denylist consulted on every authenticated request — was considered and
+  rejected. It would restore instant revocation at roughly no latency cost, since Principle I
+  protects only the redirect path and the API can afford a Redis GET. It was rejected because it
+  abandons driver 3 while looking like it does not, and a stateless design that quietly checks
+  state on every request is worse than either honest option.
+
+`spec/requests/foundation_spec.rb` asserts this window rather than assuming it: a spec proves an
+authenticated request issues no query, and another proves a token issued before a ban still works.
+If someone later adds a per-request revocation check, those specs fail and force the decision back
+into the open rather than letting it drift.
+
+**Alternatives considered**:
+- *Refresh token as a second JWT*: nothing about a refresh token benefits from being
+  self-describing, and an opaque token cannot leak claims to whoever holds it. Rejected.
+- *Refresh token in JS-reachable storage*: survives page reload, but hands long-lived credentials to
+  any XSS. Rejected in favour of the BFF.
+- *A dedicated `JWT_SECRET`*: rejected. The signing key is derived from `secret_key_base` via
+  `ActiveSupport::KeyGenerator`, so there is one secret to configure and one to rotate.
+
+### Superseded: D10 (original) — Session cookies, not JWT
+
+Retained because the constitution requires a reversed decision to keep its original reasoning
+visible, so the reversal can be judged rather than merely noticed.
+
+**Decision was**: Rails 8 built-in authentication (`has_secure_password` + sessions table), httpOnly
 `Secure` `SameSite=Lax` cookie on the app domain. Next.js calls the API with `credentials: include`.
 
-**Rationale**: Simplest correct option. Server-side revocation is a `DELETE` on a row, which the
+**Rationale was**: Simplest correct option. Server-side revocation is a `DELETE` on a row, which the
 admin account-ban feature (FR-031) needs anyway. No token refresh machinery, no storage of
 credentials in JavaScript-reachable places.
 
-**Alternatives considered**:
-- *JWT with refresh tokens*: stateless, but revocation requires a denylist — reintroducing the
-  server-side state JWT was chosen to avoid, plus refresh-rotation complexity. Rejected.
-- *Devise*: familiar, but Rails 8 ships an authentication generator covering this exact scope.
-  Rejected as an unnecessary dependency.
+**Why it was reversed**: its rejection of JWT rested on revocation cost, and it was right that
+revocation is where JWT hurts. What it did not weigh was that the project has non-browser clients
+ahead of it and that FR-031's guarantee is about visitors, not creators — so the revocation it was
+protecting was never the one the requirement asked for.
 
 ## D11. SSRF validation resolves DNS before accepting a destination
 

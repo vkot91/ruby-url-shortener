@@ -35,6 +35,10 @@ end
 RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
 
+  # travel_to / freeze_time. Needed wherever a TTL or an expiry is the thing
+  # under test, which from here on is most of the cache and auth suites.
+  config.include ActiveSupport::Testing::TimeHelpers
+
   config.before(:suite) do
     DatabaseCleaner.clean_with(:truncation)
   end

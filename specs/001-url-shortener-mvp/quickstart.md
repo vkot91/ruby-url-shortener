@@ -34,14 +34,15 @@ Health check: `curl -sf localhost:3000/up` returns 200.
 ## US1 — Shorten a link and share it
 
 ```bash
-# Register
-curl -sX POST localhost:3000/api/v1/registrations \
-  -H 'Content-Type: application/json' -c jar.txt \
-  -d '{"email":"oksana@example.com","password":"correct-horse-battery"}'
+# Register. There is no cookie jar anywhere in this file: authentication is a
+# bearer token (research.md D10), and the API sets no cookies on any path.
+ACCESS=$(curl -sX POST localhost:3000/api/v1/registrations \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"oksana@example.com","password":"correct-horse-battery"}' | jq -r .access_token)
 
 # Create
 curl -sX POST localhost:3000/api/v1/links \
-  -H 'Content-Type: application/json' -b jar.txt \
+  -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS" \
   -d '{"destination_url":"https://example.com/black-friday","name":"BF campaign"}'
 
 # Redirect — expect 302, the Location header, and no Set-Cookie
@@ -56,7 +57,7 @@ Rejection cases, each expecting 422 with a distinguishing `error.code`:
 
 ```bash
 for u in "ftp://example.com" "http://127.0.0.1:6379" "http://169.254.169.254/latest/meta-data" "http://localhost:3000/abc123"; do
-  curl -sX POST localhost:3000/api/v1/links -H 'Content-Type: application/json' -b jar.txt \
+  curl -sX POST localhost:3000/api/v1/links -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS" \
     -d "{\"destination_url\":\"$u\"}" | jq -r '.error.code'
 done
 # expect: unsupported_scheme, private_address, private_address, self_referential
@@ -70,7 +71,7 @@ different codes and two independent counters (FR-011).
 ```bash
 for i in $(seq 1 10); do curl -so /dev/null localhost:3000/<code>; done
 sleep 10
-curl -s localhost:3000/api/v1/links -b jar.txt | jq '.links[0].clicks_count'   # expect 10
+curl -s localhost:3000/api/v1/links -H "Authorization: Bearer $ACCESS" | jq '.links[0].clicks_count'   # expect 10
 ```
 
 **Expected**: 10 within 30 seconds (SC-009). The delay is the batch flush, by design (D4).
@@ -89,7 +90,7 @@ implementations.
 ```bash
 curl -so /dev/null localhost:3000/<code>            # populate the cache
 curl -sX PATCH localhost:3000/api/v1/links/<id> \
-  -H 'Content-Type: application/json' -b jar.txt \
+  -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS" \
   -d '{"destination_url":"https://example.com/corrected"}'
 curl -si localhost:3000/<code> | grep -i '^location'
 ```
@@ -104,8 +105,8 @@ while `clicks_count` survives (FR-028); another account's `PATCH` and `DELETE` r
 
 ```bash
 curl -sX POST localhost:3000/<code>/report -H 'Content-Type: application/json' -d '{"reason":"phishing"}'
-curl -s localhost:3000/api/v1/admin/reports -b admin_jar.txt | jq
-curl -sX POST localhost:3000/api/v1/admin/links/<id>/ban -b admin_jar.txt
+curl -s localhost:3000/api/v1/admin/reports -H "Authorization: Bearer $ADMIN_ACCESS" | jq
+curl -sX POST localhost:3000/api/v1/admin/links/<id>/ban -H "Authorization: Bearer $ADMIN_ACCESS"
 curl -si localhost:3000/<code> | head -1        # expect 403 with the warning page
 ```
 
