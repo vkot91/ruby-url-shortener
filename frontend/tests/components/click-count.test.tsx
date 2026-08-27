@@ -5,11 +5,6 @@ import { ClickCount } from "@/components/click-count";
 import { ShortLink } from "@/components/short-link";
 import { EmptyState } from "@/components/empty-state";
 
-// design.md P4: the dashboard refetches every 30 seconds (T108, SC-009), so a
-// count going 0 → 8 → 4051 must not move anything. jsdom has no layout engine,
-// so what is asserted here is the mechanism that prevents reflow — tabular
-// figures and a width that does not depend on the value.
-
 describe("ClickCount", () => {
   const values = [0, 8, 4051];
 

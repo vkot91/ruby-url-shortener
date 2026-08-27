@@ -3,10 +3,6 @@ import { render, screen, act } from "@testing-library/react";
 
 import { CopyButton } from "@/components/copy-button";
 
-// design.md P2: the confirmation is a state the button holds, not a toast that
-// fades. These tests protect the two halves of that — that it appears in place,
-// and that it lasts the full two seconds.
-
 function mockClipboard() {
   const writeText = vi.fn().mockResolvedValue(undefined);
 
@@ -50,7 +46,6 @@ describe("CopyButton", () => {
 
     await click(button);
 
-    // Same button, new name — not a second element somewhere else in the tree.
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByRole("button")).toHaveAccessibleName("Copied");
   });
@@ -106,7 +101,6 @@ describe("CopyButton", () => {
       vi.advanceTimersByTime(1_500);
     });
 
-    // 3s since the first click, but only 1.5s since the second.
     expect(screen.getByRole("button")).toHaveAccessibleName("Copied");
   });
 });

@@ -1,11 +1,5 @@
 import { cn } from "@/lib/utils";
 
-/**
- * design.md P1. The 7-character code is the object the product exists to
- * produce (FR-005), so it takes the foreground and the domain recedes. Every
- * screen that shows a short link goes through here — this is the one place
- * that hierarchy is expressed.
- */
 export function ShortLink({
   domain,
   code,

@@ -51,8 +51,6 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Type scale — design.md §4.2. Sizes are absolute on purpose: this is a
-     fixed scale, not a modular one, and rounding a ratio would drift. */
   --text-display: 2rem;
   --text-display--line-height: 2.5rem;
   --text-h1: 1.5rem;
@@ -70,15 +68,11 @@
   --text-metric: 1.25rem;
   --text-metric--line-height: 1.75rem;
 
-  /* Elevation — design.md §5.3. Warm-tinted in light, near-black in dark,
-     because a warm shadow on a warm dark ground is invisible. */
   --shadow-raised: var(--elevation-raised);
   --shadow-overlay: var(--elevation-overlay);
 }
 
 :root {
-  /* design.md §3.1 — warm light palette. Hex equivalents are in that table;
-     OKLCH is authoritative. */
   --background: oklch(0.985 0.006 85);
   --foreground: oklch(0.255 0.018 55);
   --card: oklch(1 0.002 85);
@@ -99,9 +93,7 @@
   --success: oklch(0.505 0.115 150);
   --success-foreground: oklch(0.99 0.01 85);
 
-  /* Decorative rules. Deliberately below 3:1 — see design.md §3.3. */
   --border: oklch(0.895 0.013 78);
-  /* Interactive control boundaries. 3.50:1, WCAG 1.4.11. */
   --input-border: oklch(0.62 0.018 72);
   --input: oklch(0.62 0.018 72);
   --ring: oklch(0.555 0.155 42);
@@ -112,8 +104,6 @@
 
   --radius: 0.75rem;
 
-  /* Unused in MVP: no charts (design.md P3) and no sidebar (§6.1). Kept so
-     stock shadcn components that reference them still resolve. */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -130,14 +120,12 @@
 }
 
 .dark {
-  /* design.md §3.2 — warm charcoal, not blue-black. */
   --background: oklch(0.185 0.012 58);
   --foreground: oklch(0.955 0.008 85);
   --card: oklch(0.235 0.014 58);
   --card-foreground: oklch(0.955 0.008 85);
   --popover: oklch(0.235 0.014 58);
   --popover-foreground: oklch(0.955 0.008 85);
-  /* Lightened: terracotta at 0.555 L fails text contrast on a dark ground. */
   --primary: oklch(0.72 0.145 48);
   --primary-hover: oklch(0.78 0.135 50);
   --primary-foreground: oklch(0.2 0.025 48);
@@ -186,7 +174,6 @@
     @apply font-sans;
   }
 
-  /* design.md §5.4 — end state preserved, duration removed. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

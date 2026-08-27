@@ -1,14 +1,5 @@
 import { cn } from "@/lib/utils";
 
-/**
- * design.md §6.3 and §6.7. No illustration — warmth in this product comes from
- * the palette and the copy, not from decoration.
- *
- * The two uses read very differently: an empty link list is a prompt, while an
- * empty moderation queue is the good outcome and must not look like an error.
- * That difference lives entirely in the copy the caller passes, which is why
- * this component carries no tone of its own.
- */
 export function EmptyState({
   heading,
   description,

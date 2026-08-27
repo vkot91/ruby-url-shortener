@@ -11,11 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { isAdmin, type Account } from "@/lib/account";
 
-/**
- * design.md §6.1. FR-003 is satisfied structurally: a creator's document
- * contains no admin control at all, not a disabled one. A disabled item still
- * tells a creator the admin area exists and where it lives.
- */
 export function AccountMenu({ account }: { account: Account | null }) {
   if (!account) {
     return <Button variant="ghost" size="sm" render={<Link href="/sign-in">Sign in</Link>} />;

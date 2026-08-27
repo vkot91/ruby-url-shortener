@@ -20,10 +20,6 @@ const OPTIONS: ReadonlyArray<{ value: Theme; label: string; Icon: typeof SunIcon
 ];
 
 export function ThemeToggle() {
-  // Starts at "system" on the server and on the first client render, then
-  // syncs in an effect. The document class is already correct by then —
-  // ThemeScript set it before paint — so this only catches up the control's
-  // own label, never the page's appearance.
   const [theme, setTheme] = React.useState<Theme>("system");
 
   React.useEffect(() => {
@@ -33,7 +29,6 @@ export function ThemeToggle() {
   React.useEffect(() => {
     if (theme !== "system") return;
 
-    // Only while following the system does an OS change need to be tracked.
     const query = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => applyTheme("system");
 

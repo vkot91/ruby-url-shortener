@@ -4,8 +4,6 @@ import { AccountMenu } from "@/components/account-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { Account } from "@/lib/account";
 
-// design.md §6.1. No sidebar: four screens do not justify persistent
-// navigation, which is why the sidebar tokens in globals.css go unused.
 export function AppShell({
   account,
   children,
