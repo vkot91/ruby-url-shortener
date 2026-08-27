@@ -99,6 +99,7 @@ specs/001-url-shortener-mvp/
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output
 ├── quickstart.md        # Phase 1 output
+├── design.md            # Phase 1 output — visual specification for the nine MVP surfaces
 ├── contracts/           # Phase 1 output
 │   ├── openapi.yaml
 │   └── redirect.md
