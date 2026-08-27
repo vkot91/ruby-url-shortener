@@ -580,8 +580,12 @@ Non-negotiable against §1.
 
 ## 10. Brief for Claude Design
 
-Hand this section to Claude Design when generating the canvas. It restates what a mockup generator
-needs and nothing else.
+Hand this section to Claude Design when generating the canvas (T123). It restates what a mockup
+generator needs and nothing else.
+
+**Published canvas**: _not yet generated — T123 fills this in._ Once it exists, the canvas is the
+reference for spacing and proportion, and this document remains the reference for tokens, copy, and
+states. Where they disagree, this document wins and the canvas is regenerated.
 
 **Product**: Snip (placeholder name), a URL shortener. Short domain `snp.to`.
 
@@ -654,9 +658,11 @@ or illustrations in empty states.
 
 ### Tasks this document adds
 
-Three tasks are required before any screen can be built to this specification. They are added to
+Four tasks are required before any screen can be built to this specification. They are added to
 `tasks.md` at the next free IDs, per that file's Task IDs convention.
 
+- **T123** — Generate the canvas with Claude Design from the brief in §10 and record its URL there.
+  Phase 2, before T121 and T122.
 - **T120** — Replace the `:root` and `.dark` token blocks in `frontend/src/app/globals.css` with
   §3, bind Figtree and JetBrains Mono via `next/font/google` in `frontend/src/app/layout.tsx`, and
   set `--radius` to `0.75rem`. Phase 2.

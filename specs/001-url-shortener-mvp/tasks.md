@@ -71,6 +71,7 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 - [X] T021 [P] Structured single-line request logging in `backend/config/initializers/logging.rb` (the redirect path is capped at one line — contracts/redirect.md)
 - [X] T022 Define `/api/v1` namespace and reserved top-level paths in `backend/config/routes.rb` (FR-012)
 
+- [ ] T123 Generate the design canvas with Claude Design from the brief in design.md §10 — eleven artboards covering the nine surfaces, with the link list and the moderation queue in both themes — and record the published canvas URL in design.md §10 so the written spec and the visual reference point at each other. Blocks T121 and T122: a component built before its screen has been drawn gets its API guessed rather than derived
 - [ ] T120 [P] Apply the design tokens from design.md §3 — replace the `:root` and `.dark` blocks in `frontend/src/app/globals.css`, set `--radius` to `0.75rem`, add `--input-border` and `--success`, and bind Figtree and JetBrains Mono via `next/font/google` in `frontend/src/app/layout.tsx` (design.md §3, §4, §5.2)
 - [ ] T121 Install the shadcn components listed in design.md §7 and build the dashboard app shell in `frontend/src/app/(dashboard)/layout.tsx`, including `<ThemeToggle>` with a pre-hydration script so dark theme does not flash light (design.md §6.1; FR-003 — creators get no admin affordance rendered at all)
 
@@ -257,7 +258,7 @@ blocking CI check from PR 1, so style debt never accumulates to be cleaned up.
 ### Parallel Opportunities
 
 - Phase 1: T003, T005, T006, T008, T010, T099, T104 all parallel; T007 (CI) runs after T099
-- Phase 2: T011, T012, T014, T015, T016, T017, T019, T020, T021 all parallel (T013 alone, since links is the busiest schema); T120 parallel with all of them, T121 after T120
+- Phase 2: T011, T012, T014, T015, T016, T017, T019, T020, T021 all parallel (T013 alone, since links is the busiest schema); T120 and T123 parallel with all of them, T121 after both
 - Phase 3A: T023–T026 (specs) parallel; T028, T029, T030 parallel; T037 parallel
 - Phase 3C: T045–T048 parallel, then T049–T061 largely sequential on the middleware file
 - Phase 4: backend (T062–T066) and frontend (T067–T071, T122) parallel across two people; T122 before T069 and T070
@@ -274,7 +275,7 @@ One PR per phase, seven PRs plus polish. Not one per task.
 | PR | Phase | Tasks | Demonstrable at merge |
 |---|---|---|---|
 | 1 | Setup | T001–T010, T099, T104 | stack runs, suites green, linters blocking |
-| 2 | Foundational | T011–T022, T114, T115, T120, T121 | schema migrates, models load, bearer auth verified, shell renders in both themes |
+| 2 | Foundational | T011–T022, T114, T115, T120, T121, T123 | schema migrates, models load, bearer auth verified, canvas published, shell renders in both themes |
 | 3 | US1 / 3A | T023–T039, T105, T116, T117 | links create and redirect, slowly |
 | 4 | US1 / 3B | T040–T044 | **a committed baseline number** |
 | 5 | US1 / 3C | T045–T061 | the same test, a different number |
