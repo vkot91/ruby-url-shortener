@@ -2,7 +2,7 @@
 
 **Branch**: `001-url-shortener-mvp` | **Date**: 2026-08-27 | **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
 
-**Status**: Draft
+**Status**: Accepted — canvas published, see §10
 
 ## Purpose
 
@@ -583,9 +583,15 @@ Non-negotiable against §1.
 Hand this section to Claude Design when generating the canvas (T123). It restates what a mockup
 generator needs and nothing else.
 
-**Published canvas**: _not yet generated — T123 fills this in._ Once it exists, the canvas is the
-reference for spacing and proportion, and this document remains the reference for tokens, copy, and
-states. Where they disagree, this document wins and the canvas is regenerated.
+**Published canvas**: <https://claude.ai/design/p/1c7890e4-1395-4ad5-b26d-8549c6fb9694?file=Snip+Design+Canvas.dc.html>
+(*Snip Design Canvas*, generated with Claude Design, 2026-08-27.)
+
+The canvas is the reference for spacing, proportion, and visual weight. This document remains the
+reference for tokens, copy, and states. Where they disagree, this document wins and the canvas is
+regenerated — a canvas that drifts from the tokens in §3 is out of date, not a new decision.
+
+The brief below is kept verbatim rather than deleted, so a regeneration starts from the same
+instructions the first one did.
 
 **Product**: Snip (placeholder name), a URL shortener. Short domain `snp.to`.
 
@@ -662,7 +668,7 @@ Four tasks are required before any screen can be built to this specification. Th
 `tasks.md` at the next free IDs, per that file's Task IDs convention.
 
 - **T123** — Generate the canvas with Claude Design from the brief in §10 and record its URL there.
-  Phase 2, before T121 and T122.
+  Phase 2, before T121 and T122. **Done** — URL recorded in §10.
 - **T120** — Replace the `:root` and `.dark` token blocks in `frontend/src/app/globals.css` with
   §3, bind Figtree and JetBrains Mono via `next/font/google` in `frontend/src/app/layout.tsx`, and
   set `--radius` to `0.75rem`. Phase 2.
