@@ -45,6 +45,13 @@ gem "redis", "~> 5.3"
 gem "connection_pool", "~> 2.4"
 gem "sidekiq", "~> 7.3"
 gem "bcrypt", "~> 3.1"
+gem "jwt", "~> 2.9"
+
+group :development do
+  # Keeps the schema comment block at the head of each model, factory, and spec
+  # in sync with the real table. Hooked into db:migrate via lib/tasks/annotate_rb.rake.
+  gem "annotaterb", "~> 4.24", require: false
+end
 
 group :development, :test do
   gem "rspec-rails", "~> 7.1"

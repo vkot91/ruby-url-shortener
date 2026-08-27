@@ -5,7 +5,10 @@ info:
   description: |
     JSON API on the app domain, consumed by the Next.js dashboard and admin area.
     The public redirect surface is a separate contract; see contracts/redirect.md.
-    Authentication is a session cookie (httpOnly, Secure, SameSite=Lax) — see research.md D10.
+    Authentication is a bearer access token: `Authorization: Bearer <jwt>`, HS256, 15-minute
+    lifetime, verified by signature alone. Refresh is an opaque rotating token — see research.md
+    D10. This API sets no cookies on any path; the browser client's refresh token is held by the
+    Next.js BFF on its own origin.
 
 servers:
   - url: https://app.example.com/api/v1
@@ -32,7 +35,11 @@ paths:
                 email: { type: string, format: email }
                 password: { type: string, minLength: 12 }
       responses:
-        '201': { description: Created; session cookie set }
+        '201':
+          description: Created. Returns a token pair; no cookie is set.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
         '422': { $ref: '#/components/responses/ValidationError' }
         '429':
           description: Too many attempts from this origin in the last hour (FR-036).
@@ -53,7 +60,11 @@ paths:
                 email: { type: string, format: email }
                 password: { type: string }
       responses:
-        '201': { description: Session cookie set }
+        '201':
+          description: Signed in. Opens a new refresh-token family.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
         '401': { description: Invalid credentials }
         '429':
           description: |
@@ -63,8 +74,55 @@ paths:
     delete:
       tags: [auth]
       summary: Sign out
+      description: |
+        Revokes the caller's refresh-token family. The current access token is not revoked and
+        remains valid until it expires — see research.md D10's recorded window.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
       responses:
-        '204': { description: Session revoked }
+        '204': { description: Refresh-token family revoked }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Exchange a refresh token for a new pair (research.md D10)
+      security: []
+      description: |
+        Rotation is mandatory: the presented token is consumed and a successor is issued in the
+        same family. Presenting a token that has already been exchanged is treated as a
+        compromise — the entire family is revoked and the caller must sign in again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '201':
+          description: A new pair. The presented token is now dead.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401':
+          description: |
+            `error.code` is `invalid_refresh_token` when the token is unknown, expired, or
+            revoked, and `token_reuse_detected` when an already-exchanged token was replayed.
+            The second case has also just revoked the whole family.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Too many attempts from this origin in the last hour (FR-036).
 
   /links:
     get:
@@ -262,12 +320,32 @@ paths:
 
 components:
   securitySchemes:
-    sessionCookie:
-      type: apiKey
-      in: cookie
-      name: _session
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Short-lived access token. A 401 with `error.code` of `token_expired` means refresh and
+        retry; any other 401 means sign in again. Clients must distinguish the two.
 
   schemas:
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: >-
+            JWT. Send as `Authorization: Bearer`. Hold in memory, never in localStorage.
+        refresh_token:
+          type: string
+          description: |
+            Opaque, single-use. Browser clients never see this — the Next.js BFF stores it in an
+            httpOnly cookie on its own origin.
+        expires_in:
+          type: integer
+          description: Access-token lifetime in seconds (900).
+
     Link:
       type: object
       properties:
@@ -315,4 +393,4 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
 security:
-  - sessionCookie: []
+  - bearerAuth: []

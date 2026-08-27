@@ -24,16 +24,18 @@ then measured with the identical harness. Both implementations remain runnable b
 
 **Primary Dependencies**
 
-*Backend*: Rails 8.0 (API-only + Rack middleware, built-in `has_secure_password` authentication and
-`rate_limit`), Puma, `redis-rb` 5.x with connection pooling, Sidekiq 7 for background work.
+*Backend*: Rails 8.0 (API-only + Rack middleware, `has_secure_password` and `rate_limit`), the
+`jwt` gem for HS256 access tokens, Puma, `redis-rb` 5.x with connection pooling, Sidekiq 7 for
+background work. No cookie middleware is in the stack at all (research.md D10).
 
 *Frontend*: Next.js 15 (App Router) with React 19, Tailwind CSS 4, shadcn/ui for accessible
 primitives (dialog, table, toast, form), zod for schema validation shared between forms and the
 typed API client, react-hook-form with `@hookform/resolvers` for form state, and TanStack Query
 scoped **only** to polling the dashboard click counts.
 
-*Deliberately excluded*: no client state manager (Zustand, Redux) — session lives in an httpOnly
-cookie and everything else is server data; no charting library — MVP renders one integer per link,
+*Deliberately excluded*: no client state manager (Zustand, Redux) — the access token lives in
+memory, the refresh token in an httpOnly cookie held by the Next.js BFF, and everything else is
+server data; no charting library — MVP renders one integer per link,
 and charts belong to the out-of-scope paid analytics tier.
 
 **Storage**: PostgreSQL 17 as system of record; Redis 7.4 as read cache, click buffer, and Sidekiq
@@ -53,7 +55,8 @@ first pull request
 served without a Postgres read; ≥99.9% redirect availability under load
 
 **Constraints**: ≤50 ms service-added latency at p99 under target load; zero synchronous work on the
-redirect path beyond one Redis GET; no plain visitor IP persisted; no cookie set on redirect
+redirect path beyond one Redis GET; no plain visitor IP persisted; no cookie set on any path, since
+the cookie middleware is absent from the stack entirely
 
 **Scale/Scope**: MVP targets ~10 000 accounts and ~500 000 links, with click volume assumed three
 orders of magnitude above link volume. Four user stories, 35 functional requirements.
@@ -68,7 +71,7 @@ orders of magnitude above link volume. Four user stories, 35 functional requirem
 | II. Measure Before, Measure After | Naive baseline exists, is runnable, and is measured before optimisation | PASS | PASS — `REDIRECT_CACHE_ENABLED` flag keeps both paths live; identical k6 script for both runs; results committed as data |
 | III. The Store Enforces Its Own Invariants | Uniqueness by constraint, not check-then-write | PASS | PASS — unique index on `links.code`, insert-and-rescue `PG::UniqueViolation`, no existence query |
 | IV. Cache Invalidation Belongs To The Write | Invalidation in the same operation as the write, before acknowledgement | PASS | PASS — `after_commit` on `Link` deletes the cache key before the HTTP response returns; see research.md for why after-commit rather than in-transaction |
-| V. The Visitor Is Not The Product | No plain IP stored, no redirect cookie, audited admin access to customer analytics | PASS | PASS — MVP click record holds only `link_id` and timestamp; no IP reaches the click row at all |
+| V. The Visitor Is Not The Product | No plain IP stored, no redirect cookie, audited admin access to customer analytics | PASS | PASS — MVP click record holds only `link_id` and timestamp; no IP reaches the click row at all. Bearer-token auth means `ActionDispatch::Cookies` is not in the middleware stack, so "no cookie on the redirect" is structural rather than asserted |
 
 **Result**: All gates pass for the delivered system. One time-boxed waiver is recorded below.
 
@@ -111,12 +114,13 @@ backend/
 ├── app/
 │   ├── controllers/
 │   │   ├── concerns/
-│   │   ├── api/v1/          # links, sessions, registrations, stats
+│   │   ├── api/v1/          # links, sessions, registrations, token refresh, stats
 │   │   └── api/v1/admin/    # links, accounts, reports, blocked_domains, health
 │   ├── middleware/
 │   │   └── redirect_middleware.rb   # the hot path; runs before the Rails router
 │   ├── models/              # account, link, click, blocked_domain, report
 │   ├── services/
+│   │   ├── auth/            # access_token (JWT), refresh_tokens (rotation + reuse detection)
 │   │   ├── links/           # creator, updater, destroyer, code_generator
 │   │   ├── urls/            # normalizer, safety_validator (SSRF + blocklist)
 │   │   └── cache/           # link_cache, negative_cache
@@ -142,7 +146,7 @@ frontend/
 │   │   ├── (dashboard)/     # link list, link create, link detail
 │   │   └── admin/           # moderation queue, link search, accounts, health
 │   ├── components/
-│   ├── lib/                 # api client, session helpers
+│   ├── lib/                 # api client, BFF route handlers holding the refresh token
 │   └── types/
 └── tests/
 

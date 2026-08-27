@@ -110,3 +110,19 @@ Layout/EmptyLinesAroundBlockBody:
 
 Layout/TrailingEmptyLines:
   Enabled: true
+
+# --- Spec-tree exceptions, each with a reason ---
+# Request, integration, and schema specs describe a surface or an invariant, not
+# a class; naming one would be a fiction.
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/requests/**/*"
+    - "spec/integration/**/*"
+    - "spec/models/schema_constraints_spec.rb"
+
+# Bypassing the model layer is the entire purpose of this file: Principle III
+# says the database enforces these invariants, so the tests must reach past the
+# validations that would otherwise mask a missing constraint.
+Rails/SkipsModelValidations:
+  Exclude:
+    - "spec/models/schema_constraints_spec.rb"

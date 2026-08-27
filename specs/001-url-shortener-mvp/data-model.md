@@ -34,19 +34,34 @@ the second half.
 
 ---
 
-### sessions
+### refresh_tokens
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
 | `id` | bigint | PK | |
 | `account_id` | bigint | NOT NULL, FK → accounts, ON DELETE CASCADE | |
-| `token_digest` | text | NOT NULL, UNIQUE | the raw token lives only in the cookie |
+| `token_digest` | text | NOT NULL, UNIQUE | SHA-256; the raw token exists only in the client's hands |
+| `family_id` | uuid | NOT NULL | one sign-in opens one family; rotation stays inside it |
+| `used_at` | timestamptz | NULL | set when exchanged; a token presented with this set is a replay |
+| `expires_at` | timestamptz | NOT NULL | 30 days from issue |
+| `revoked_at` | timestamptz | NULL | |
 | `user_agent` / `ip_address` | text | NULL | the *account holder's*, at sign-in — not a visitor's; Principle V governs the redirect path, not authenticated sessions |
 | `created_at` | timestamptz | NOT NULL | |
 
-**Indexes**: unique on `token_digest`; on `account_id`.
+**Indexes**: unique on `token_digest`; on `family_id`.
 
-Server-side revocation is a row delete, which is what account banning needs (D10).
+**Rules**
+- Access tokens are **not** stored. They are JWTs verified by signature, so an authenticated API
+  request reads no row at all (D10). This table exists precisely because refresh is the only thing
+  that can extend a session, and therefore the only thing that has to be revocable.
+- Rotation is mandatory: every exchange stamps `used_at` on the presented token and issues a
+  successor in the same family.
+- **Reuse detection**: presenting a token that already has `used_at` set means either the client
+  replayed itself or somebody else holds a copy. There is no way to tell which, so the entire
+  family is revoked and the human signs in again.
+- Banning an account revokes every family it owns, fired from the write itself
+  (`after_update_commit` on `Account`) rather than from whichever controller applied the ban.
+- Revocation of an access token is not possible and not attempted; see D10's recorded window.
 
 ---
 
