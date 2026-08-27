@@ -9,16 +9,21 @@ implementation guide — code belongs in `tasks.md` and the implementation phase
 
 - Docker and Docker Compose
 - Ruby 3.4 (`asdf install ruby 3.4.8`; pin it with a `.tool-versions` in Phase 1 (task T001) — the repo has none yet)
-- Node 22 LTS
+- Node 24 LTS, with pnpm enabled via `corepack enable` — the frontend uses pnpm, not npm, and the
+  version is pinned by `packageManager` in `frontend/package.json`
 - k6, for Phases 3B and 3C only
 
 ## Bring the stack up
+
+Copy the environment template first — nothing in the codebase carries a default, so an unset name
+fails at boot: `cp .env.example .env`. Compose reads it automatically; for host-side tooling load it
+with `set -a; source .env; set +a`.
 
 ```bash
 docker compose up -d postgres redis
 cd backend && bin/rails db:prepare && bin/rails s -p 3000
 cd backend && bundle exec sidekiq          # separate shell
-cd frontend && npm run dev                 # separate shell, port 3001
+cd frontend && pnpm dev                    # separate shell, port 3001
 ```
 
 Two hosts in development, matching the production split: `localhost:3000` is the short domain and
@@ -148,7 +153,7 @@ k6 run load/enumerate.js                             # random non-existent codes
 
 ```bash
 cd backend  && bundle exec rspec && bundle exec rubocop
-cd frontend && npm test && npm run lint && npx playwright test
+cd frontend && pnpm test && pnpm run lint && pnpm exec playwright test
 ```
 
 All four are blocking CI checks from PR 1 onward.

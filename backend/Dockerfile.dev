@@ -1,0 +1,15 @@
+# Development image: source is bind-mounted, so only the gems are baked in.
+# backend/Dockerfile (Rails' generated one) remains the production build.
+FROM ruby:3.4.8-slim
+
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential libpq-dev git curl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /rails
+
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+EXPOSE 3001
+CMD ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3001"]

@@ -6,16 +6,44 @@
 # Claude Code local overrides
 .claude/settings.local.json
 
-# Ruby
-/.bundle/
-/vendor/bundle/
-/log/*
-/tmp/*
-/storage/*
-/public/assets
+# Ruby / Rails
+/backend/.bundle/
+/backend/vendor/bundle/
+/backend/log/*
+/backend/tmp/*
+!/backend/tmp/.keep
+/backend/storage/*
+!/backend/storage/.keep
+/backend/public/assets
+/backend/config/master.key
+/backend/config/credentials/*.key
+*.gem
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-error.log*
+
+# Load test output is a deliverable — results/ is committed on purpose.
+/load/node_modules/
+
+# Environment
 .env
 .env.*
 !.env.example
 
-# OS
+# OS / editors
 .DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

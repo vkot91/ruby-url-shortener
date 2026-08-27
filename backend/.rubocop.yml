@@ -1,0 +1,112 @@
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
+
+plugins:
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.4
+  NewCops: enable
+  Exclude:
+    - "bin/**/*"
+    - "db/schema.rb"
+    - "vendor/**/*"
+    - "tmp/**/*"
+
+# The redirect path is the point of the project; keep it readable rather than
+# split into methods for a metric's sake.
+Metrics:
+  Enabled: false
+
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/NestedGroups:
+  Max: 4
+
+# --- Good practices on top of omakase ---
+# Omakase disables nearly every style cop and cherry-picks a few Rails/
+# Performance ones. These two departments are correctness- and performance-
+# oriented rather than stylistic, so run them in full.
+Rails:
+  Enabled: true
+
+Performance:
+  Enabled: true
+
+# API-only app: no views, no i18n layer worth the ceremony.
+Rails/OutputSafety:
+  Enabled: false
+
+Rails/I18nLocaleTexts:
+  Enabled: false
+
+# Bugs that otherwise only surface at runtime.
+Lint/AmbiguousBlockAssociation:
+  Enabled: true
+
+Lint/DuplicateBranch:
+  Enabled: true
+
+Lint/ShadowedArgument:
+  Enabled: true
+
+Lint/UnreachableLoop:
+  Enabled: true
+
+Lint/UselessAssignment:
+  Enabled: true
+
+# Structural smells that make a method hard to read at 3am.
+Style/GuardClause:
+  Enabled: true
+
+Style/RedundantReturn:
+  Enabled: true
+
+Style/RedundantSelf:
+  Enabled: true
+
+Style/SafeNavigation:
+  Enabled: true
+
+Naming/PredicateMethod:
+  Enabled: true
+
+# Specs: guard against silently passing examples.
+RSpec/BeEq:
+  Enabled: true
+
+RSpec/EmptyExampleGroup:
+  Enabled: true
+
+RSpec/LetSetup:
+  Enabled: true
+
+RSpec/RepeatedExample:
+  Enabled: true
+
+RSpec/VerifiedDoubles:
+  Enabled: true
+
+# Whitespace that omakase leaves alone but that adds up in diffs.
+Layout/EmptyLines:
+  Enabled: true
+
+Layout/EmptyLinesAroundClassBody:
+  Enabled: true
+
+Layout/EmptyLinesAroundModuleBody:
+  Enabled: true
+
+Layout/EmptyLinesAroundMethodBody:
+  Enabled: true
+
+Layout/EmptyLinesAroundBlockBody:
+  Enabled: true
+
+Layout/TrailingEmptyLines:
+  Enabled: true

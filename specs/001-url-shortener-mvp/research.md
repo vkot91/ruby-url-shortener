@@ -244,6 +244,21 @@ still resolve correctly once Redis returns, because the miss path re-reads the a
 from Postgres. Worst case is up to 24 hours of stale cached entries for that account — noted, not
 solved, and detectable via the admin health endpoint.
 
+## D15a. pnpm as the frontend package manager
+
+**Decision**: pnpm, pinned by the `packageManager` field in `frontend/package.json` and activated
+through corepack. `pnpm-lock.yaml` is the committed lockfile; `package-lock.json` is removed.
+
+**Rationale**: shadcn/ui copies components into the tree and pulls a wide Radix dependency graph, so
+the content-addressed store saves meaningful disk and install time on every rebuild of the dev image.
+The strict, non-flat `node_modules` also refuses undeclared transitive imports, which is the failure
+this project would otherwise only discover in a production build.
+
+**Applies to**: `frontend/Dockerfile.dev` (`corepack enable`, `pnpm install --frozen-lockfile`),
+the compose `frontend` command, and both frontend CI jobs via `pnpm/action-setup`.
+
+---
+
 ## D15. Frontend library selection
 
 **Decision**: shadcn/ui, zod, react-hook-form, and TanStack Query — the last one scoped to polling

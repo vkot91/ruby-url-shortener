@@ -33,20 +33,20 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 **Purpose**: A running stack and green empty suites. No feature behaviour.
 
-- [ ] T001 Create `.tool-versions` pinning `ruby 3.4.8` and `nodejs 22` at repository root
-- [ ] T002 Generate API-only Rails 8 app in `backend/` with `--api --database=postgresql --skip-solid`
-- [ ] T003 [P] Generate Next.js 15 app in `frontend/` with App Router, TypeScript, Tailwind 4
-- [ ] T004 Write `docker-compose.yml` at repository root with postgres:17, redis:7.4, backend, frontend, sidekiq services
-- [ ] T005 [P] Configure RSpec, FactoryBot, and DatabaseCleaner in `backend/spec/rails_helper.rb`
-- [ ] T006 [P] Configure Vitest and Playwright in `frontend/vitest.config.ts` and `frontend/playwright.config.ts`
-- [ ] T099 [P] RuboCop configuration in `backend/.rubocop.yml` and ESLint + Prettier configuration in `frontend/eslint.config.mjs` — established before any feature code exists, so no retrofit diff is ever needed
-- [ ] T007 [P] Add CI workflow in `.github/workflows/ci.yml` running both test suites **and both linters as blocking checks** (depends on T099 — a lint config CI does not enforce is decoration)
-- [ ] T008 [P] Write `.gitignore` covering Rails, Node, and `.claude/` per the Spec Kit security note
-- [ ] T009 Set `maxmemory` and `maxmemory-policy allkeys-lru` in `docker-compose.yml` redis service, and put Sidekiq on a separate Redis database index (Principle IV, research.md D9)
-- [ ] T010 [P] Add `backend/config/initializers/redis.rb` with a connection pool sized for Puma thread count
-- [ ] T104 [P] Install and configure the frontend libraries from research.md D15 — `npx shadcn@latest init`, plus `zod`, `react-hook-form`, `@hookform/resolvers`, `@tanstack/react-query` — in `frontend/package.json` and `frontend/components.json`
+- [X] T001 Create `.tool-versions` pinning `ruby 3.4.8` and `nodejs 24.19.0` at repository root
+- [X] T002 Generate API-only Rails 8 app in `backend/` with `--api --database=postgresql --skip-solid`
+- [X] T003 [P] Generate Next.js 15 app in `frontend/` with App Router, TypeScript, Tailwind 4
+- [X] T004 Write `docker-compose.yml` at repository root with postgres:17, redis:7.4, backend, frontend, sidekiq services
+- [X] T005 [P] Configure RSpec, FactoryBot, and DatabaseCleaner in `backend/spec/rails_helper.rb`
+- [X] T006 [P] Configure Vitest and Playwright in `frontend/vitest.config.ts` and `frontend/playwright.config.ts`
+- [X] T099 [P] RuboCop configuration in `backend/.rubocop.yml` and ESLint + Prettier configuration in `frontend/eslint.config.mjs` — established before any feature code exists, so no retrofit diff is ever needed
+- [X] T007 [P] Add CI workflow in `.github/workflows/ci.yml` running both test suites **and both linters as blocking checks** (depends on T099 — a lint config CI does not enforce is decoration)
+- [X] T008 [P] Write `.gitignore` covering Rails, Node, and `.claude/` per the Spec Kit security note
+- [X] T009 Set `maxmemory` and `maxmemory-policy allkeys-lru` in `docker-compose.yml` redis service, and put Sidekiq on a separate Redis database index (Principle IV, research.md D9)
+- [X] T010 [P] Add `backend/config/initializers/redis.rb` with a connection pool sized for Puma thread count
+- [X] T104 [P] Install and configure the frontend libraries from research.md D15 — `pnpm dlx shadcn@latest init`, plus `zod`, `react-hook-form`, `@hookform/resolvers`, `@tanstack/react-query` — in `frontend/package.json` and `frontend/components.json`
 
-**Checkpoint**: `docker compose up` yields a running stack; `bundle exec rspec` and `npm test` pass with zero tests; `rubocop` and `eslint` pass clean and are blocking in CI.
+**Checkpoint**: `docker compose up` yields a running stack; `bundle exec rspec` and `pnpm test` pass with zero tests; `rubocop` and `eslint` pass clean and are blocking in CI.
 
 ---
 
@@ -88,6 +88,8 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 - [ ] T025 [P] [US1] Unit spec for SSRF rejection (private, loopback, link-local, self-referential, non-http scheme) in `backend/spec/services/urls/safety_validator_spec.rb`
 - [ ] T026 [P] [US1] Unit spec asserting code allocation retries on `RecordNotUnique` and never issues an existence query in `backend/spec/services/links/code_generator_spec.rb`
 - [ ] T027 [US1] `Api::V1::RegistrationsController` and `Api::V1::SessionsController` in `backend/app/controllers/api/v1/` per contracts/openapi.yaml (FR-001)
+- [ ] T112 [US1] `rate_limit` on `Api::V1::RegistrationsController#create` and `Api::V1::SessionsController#create` — per hashed IP on both, plus per hashed email on sign-in (FR-036)
+- [ ] T113 [P] [US1] Request spec asserting the auth limiters return 429 and that the refusal body is indistinguishable for a registered and an unregistered address, in `backend/spec/requests/api/v1/auth_rate_limit_spec.rb` (FR-036)
 - [ ] T028 [P] [US1] `Urls::Normalizer` in `backend/app/services/urls/normalizer.rb` (FR-008)
 - [ ] T029 [P] [US1] `Urls::SafetyValidator` in `backend/app/services/urls/safety_validator.rb` — resolves DNS before accepting, re-usable on edit (FR-006, research.md D11)
 - [ ] T030 [P] [US1] `Links::CodeGenerator` in `backend/app/services/links/code_generator.rb` — 7 chars base62 via SecureRandom (FR-009)

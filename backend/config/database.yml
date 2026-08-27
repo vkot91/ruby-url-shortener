@@ -1,0 +1,23 @@
+# Connection details come from the environment, with no fallbacks: an unset name
+# raises at boot instead of silently connecting somewhere unintended. Compose
+# supplies them; host-side tooling loads .env (see .env.example).
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") %>
+  host: <%= ENV.fetch("POSTGRES_HOST") %>
+  port: <%= ENV.fetch("POSTGRES_PORT") %>
+  username: <%= ENV.fetch("POSTGRES_USER") %>
+  password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
+
+development:
+  <<: *default
+  database: shortener_development
+
+test:
+  <<: *default
+  database: shortener_test
+
+production:
+  <<: *default
+  database: shortener_production
