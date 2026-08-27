@@ -27,6 +27,9 @@ the second half.
 - Free accounts are limited to 50 links where `deleted_at IS NULL` (FR-004).
 - Link creation is rate-limited per account per hour via Rails' `rate_limit` (FR-004). The counter
   lives in Redis, not in a table — it is expendable.
+- Registration and sign-in are rate-limited per hour via the same mechanism (FR-036): by hashed
+  origin IP on both endpoints, and additionally by hashed email address on sign-in, so credential
+  stuffing cannot be spread across many addresses from one origin.
 - Banning an account bans the redirect behaviour of all its links without writing to each link row.
 
 ---
@@ -169,6 +172,8 @@ nothing else (Principle I, SC-008).
 | `account:<id>:codes` | set | 24h | codes this account has cached, so an account ban can invalidate them without a `SCAN` (D14) |
 | `ratelimit:create:<account_id>` | string | 1h | link-creation throttle |
 | `ratelimit:report:<ip_hash>` | string | 1h | report-abuse throttle; the IP is hashed, never stored raw |
+| `ratelimit:auth:<ip_hash>` | string | 1h | registration and sign-in throttle per origin (FR-036); the IP is hashed, never stored raw |
+| `ratelimit:signin:<email_hash>` | string | 1h | sign-in throttle per target account (FR-036); the address is hashed |
 
 **Cached value**: a compact encoding of `destination_url`, `banned` and `deleted` flags, and the
 owning account's banned flag — everything the redirect decision needs. Account bans must therefore

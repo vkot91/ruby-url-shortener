@@ -111,6 +111,7 @@ The administrator opens the admin area each morning, finds links reported as har
 - **FR-002**: System MUST scope every link and every statistic to its owning account; no creator can read or modify another creator's data.
 - **FR-003**: System MUST distinguish an administrator role from a creator role, and MUST refuse administrator functions to creators.
 - **FR-004**: System MUST limit each free account to 50 active links and MUST limit how many links one account can create per hour.
+- **FR-036**: System MUST limit how many registration and sign-in attempts one origin can make per hour, and how many sign-in attempts can be made against one email address per hour. A refused attempt MUST NOT reveal whether the email address is registered.
 
 #### Link creation
 

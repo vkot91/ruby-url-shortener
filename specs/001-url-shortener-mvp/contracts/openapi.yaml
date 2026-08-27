@@ -34,6 +34,8 @@ paths:
       responses:
         '201': { description: Created; session cookie set }
         '422': { $ref: '#/components/responses/ValidationError' }
+        '429':
+          description: Too many attempts from this origin in the last hour (FR-036).
 
   /sessions:
     post:
@@ -53,6 +55,11 @@ paths:
       responses:
         '201': { description: Session cookie set }
         '401': { description: Invalid credentials }
+        '429':
+          description: |
+            Too many attempts in the last hour, from this origin or against this email
+            address (FR-036). The body is identical to the 401 body — it must not reveal
+            whether the address is registered.
     delete:
       tags: [auth]
       summary: Sign out
