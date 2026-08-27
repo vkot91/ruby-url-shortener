@@ -9,6 +9,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job here reads the checkout and nothing else. Narrowing this at the
+# workflow level means a job added later starts from least privilege rather than
+# inheriting whatever the repository default happens to be.
+permissions:
+  contents: read
+
 jobs:
   # Linters run as their own required checks, not as a step tacked onto the test
   # job, so a style failure is distinguishable from a broken test at a glance.
@@ -24,6 +30,21 @@ jobs:
           bundler-cache: true
           working-directory: backend
       - run: bundle exec rubocop
+
+  # Brakeman has been in the Gemfile since the app was generated. A security
+  # scanner nobody runs is a dependency, not a control.
+  backend-security:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          working-directory: backend
+      - run: bin/brakeman --no-pager
 
   frontend-lint:
     runs-on: ubuntu-latest
@@ -48,6 +69,26 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec eslint
       - run: pnpm run format:check
+
+  # ESLint does not type-check. Without this, a type error reaches main and is
+  # first discovered by whoever next runs `next build`.
+  frontend-typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
 
   backend-test:
     runs-on: ubuntu-latest
@@ -87,6 +128,50 @@ jobs:
       - run: bin/rails db:prepare
       - run: bundle exec rspec
 
+  # db/schema.rb is committed and is what `db:prepare` loads, so a migration
+  # merged without its regenerated dump breaks database setup for everyone else
+  # while every other check stays green. Migrating from empty and diffing is the
+  # only thing that catches it.
+  backend-schema:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      # Deliberately the test environment: the annotaterb rake hook only fires
+      # in development, and it would rewrite model files mid-check.
+      RAILS_ENV: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RAILS_MAX_THREADS: "5"
+      # Booting Rails requires these to be set — the Redis and Sidekiq
+      # initializers use ENV.fetch with no fallback on purpose, so a missing
+      # name fails loudly rather than connecting somewhere unintended. Both
+      # clients connect lazily, so this job needs the variables but no Redis
+      # service.
+      REDIS_URL: redis://localhost:6379/0
+      SIDEKIQ_REDIS_URL: redis://localhost:6379/1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          working-directory: backend
+      - run: bin/rails db:create db:migrate
+      - name: Fail if db/schema.rb does not match the migrations
+        run: git diff --exit-code db/schema.rb
+
   frontend-test:
     runs-on: ubuntu-latest
     defaults:
@@ -109,3 +194,32 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+
+  # The single check to mark required in the branch rule. Everything above feeds
+  # into it, so protecting main means protecting one name that never changes,
+  # rather than a hand-maintained list that silently stops covering a job the day
+  # someone adds one.
+  #
+  # `if: always()` is load-bearing. Without it this job is skipped when an
+  # upstream job fails, a skipped job reports no status, and the branch rule
+  # waits forever on a check that will never arrive instead of blocking the
+  # merge. `cancelled` and `skipped` are treated as failures for the same
+  # reason: only an explicit success should open the gate.
+  all-checks:
+    if: always()
+    needs:
+      - backend-lint
+      - backend-security
+      - backend-test
+      - backend-schema
+      - frontend-lint
+      - frontend-typecheck
+      - frontend-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify every upstream job succeeded
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: |
+          echo "One or more required jobs did not succeed:"
+          echo '${{ toJSON(needs) }}'
+          exit 1
