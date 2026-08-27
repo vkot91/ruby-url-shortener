@@ -137,8 +137,9 @@ same family as the app without importing any of its machinery.
 
 Tokens are authored in OKLCH and slot directly into the existing `:root` and `.dark` blocks in
 `frontend/src/app/globals.css`. The variable names are exactly the ones shadcn/ui already emits, so
-adopting this palette is a value replacement, not a restructure. Two names are added
-(`--input-border`, `--success` and its foreground); everything else is a substitution.
+adopting this palette is a value replacement, not a restructure. Three names are added
+(`--input-border`, `--success` with its foreground, and `--primary-hover`); everything else is a
+substitution.
 
 ### 3.1 Light theme
 
@@ -151,6 +152,7 @@ adopting this palette is a value replacement, not a restructure. Two names are a
 | `--popover` | `1 0.002 85` | `#fffffe` | Popover, dropdown, command |
 | `--popover-foreground` | `0.255 0.018 55` | `#2a211b` | |
 | `--primary` | `0.555 0.155 42` | `#ba4c18` | Terracotta — primary action, links, focus |
+| `--primary-hover` | `0.469 0.128 43` | `#933c12` | Primary hover — button ground and link text |
 | `--primary-foreground` | `0.99 0.012 85` | `#fffbf3` | Text on primary |
 | `--secondary` | `0.945 0.014 78` | `#f2ece3` | Secondary button ground |
 | `--secondary-foreground` | `0.30 0.02 55` | `#362b24` | |
@@ -180,6 +182,7 @@ Dark is a warm charcoal, not a blue-black. The primary lightens to `0.72 L` beca
 | `--popover` | `0.235 0.014 58` | `#231d18` | |
 | `--popover-foreground` | `0.955 0.008 85` | `#f3f0ea` | |
 | `--primary` | `0.72 0.145 48` | `#ec854d` | Lightened terracotta |
+| `--primary-hover` | `0.78 0.135 50` | `#fc9c64` | Primary hover |
 | `--primary-foreground` | `0.20 0.025 48` | `#1f130c` | |
 | `--secondary` | `0.30 0.016 58` | `#342c26` | |
 | `--secondary-foreground` | `0.955 0.008 85` | `#f3f0ea` | |
@@ -220,6 +223,8 @@ formula. Threshold is 4.5:1 for text and 3:1 for non-text boundaries.
 | primary-foreground on primary | 4.93 | 6.99 |
 | primary as text on background | 4.87 | 7.17 |
 | primary as text on card | 5.07 | 6.42 |
+| primary-hover as text on background | 6.96 | 8.98 |
+| primary-foreground on primary-hover | 7.03 | 8.71 |
 | destructive as text on background | 5.27 | 5.61 |
 | destructive-foreground on destructive | 5.35 | 5.86 |
 | success as text on background | 5.33 | 8.37 |
@@ -604,19 +609,29 @@ instructions the first one did.
 **Geometry**: 12px base radius, 4px spacing grid using only 4/8/12/16/24/32/48/64, three elevation
 levels from §5.3.
 
-**Artboards to produce** — 11 total, at 1280×832 unless noted:
+**Artboards** — 15, at 1280×832 unless noted. The first generation was briefed for 11 and produced
+15; the four extra are failure and transitional states that §6 names but the brief had not asked to
+be drawn. They are kept, and this table is what a regeneration works from.
 
-1. Sign in (§6.2) — light
-2. Sign up (§6.2) — light
-3. Link list with 6 rows of realistic data (§6.3) — **light and dark, two artboards**
-4. Link list, empty state (§6.3) — light
-5. Create link, form state (§6.4) — light
-6. Create link, success state with the copy button (§6.4) — light
-7. Edit link with the read-only code row (§6.5) — light
-8. Delete confirmation dialog over a dimmed list (§6.6) — light
-9. Admin moderation queue with 5 reports (§6.7) — **light and dark, two artboards**
-10. Admin health tiles (§6.8) — light
-11. Not-found and safety-warning pages side by side (§6.9) — 640×832 each
+| # | Artboard | Theme | Section | Task |
+|---|---|---|---|---|
+| 01 | Sign in | light | §6.2 | T068 |
+| 02 | Sign up, form-level failure | light | §6.2 | T068 |
+| 03 | Link list, 6 rows | light | §6.3 | T069, T108 |
+| 04 | Link list, 6 rows | **dark** | §6.3 | T069, T108 |
+| 05 | Link list, empty state + first-load skeletons | light | §6.3 | T069 |
+| 06 | Create link, form with field error | light | §6.4 | T070 |
+| 07 | Create link, success state | light | §6.4 | T070 |
+| 08 | Edit link, read-only code row | light | §6.5 | T080 |
+| 09 | Delete confirmation over the list | light | §6.6 | T081 |
+| 10 | Moderation queue, 5 reports | light | §6.7 | T094, T109 |
+| 11 | Moderation queue, 5 reports | **dark** | §6.7 | T094, T109 |
+| 12 | Admin link search + health tiles | light | §6.8 | T095 |
+| 13 | Ban confirmation + queue empty state | light | §6.7 | T094 |
+| 14 | Not found (404), system fonts | light | §6.9 | T037 |
+| 15 | Safety warning (403), system fonts | light | §6.9 | T084 |
+
+Artboards 14 and 15 render at 640×832 and deliberately load no webfont, per §8.
 
 **Sample data to use**, so mockups are comparable to each other:
 
@@ -668,7 +683,23 @@ Four tasks are required before any screen can be built to this specification. Th
 `tasks.md` at the next free IDs, per that file's Task IDs convention.
 
 - **T123** — Generate the canvas with Claude Design from the brief in §10 and record its URL there.
-  Phase 2, before T121 and T122. **Done** — URL recorded in §10.
+  Phase 2, before T121 and T122. **Done** — URL and artboard index recorded in §10.
+
+### Canvas conformance, checked 2026-08-27
+
+The published canvas was read back through the Claude Design MCP and checked against this document
+rather than accepted on sight:
+
+- Every hex in the canvas comes from §3.1 or §3.2, with two exceptions. `#933c12` is a primary
+  hover state this document had no token for — it is now `--primary-hover`, measured at 6.96:1, and
+  a dark counterpart `#fc9c64` was derived to match. `#5b5049` appears only in the canvas's own
+  caption chrome, outside every artboard, and is not a product color.
+- Both themes are present on the two surfaces §10 required them for: link list (03, 04) and
+  moderation queue (10, 11).
+- No admin artboard contains a clicks column (10, 11, 12, 13). FR-034 and P6 hold in the drawing,
+  not only in the prose.
+- The dark `--success` (`#61c086`) is unused — no artboard draws the copy confirmation in dark
+  theme. Not a defect; the token is specified and T122 is what proves it renders.
 - **T120** — Replace the `:root` and `.dark` token blocks in `frontend/src/app/globals.css` with
   §3, bind Figtree and JetBrains Mono via `next/font/google` in `frontend/src/app/layout.tsx`, and
   set `--radius` to `0.75rem`. Phase 2.
