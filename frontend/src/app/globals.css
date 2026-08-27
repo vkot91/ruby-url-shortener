@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -34,7 +34,11 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-primary: var(--primary);
+  --color-success-foreground: var(--success-foreground);
+  --color-success: var(--success);
+  --color-input-border: var(--input-border);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -46,75 +50,129 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Type scale — design.md §4.2. Sizes are absolute on purpose: this is a
+     fixed scale, not a modular one, and rounding a ratio would drift. */
+  --text-display: 2rem;
+  --text-display--line-height: 2.5rem;
+  --text-h1: 1.5rem;
+  --text-h1--line-height: 2rem;
+  --text-h2: 1.125rem;
+  --text-h2--line-height: 1.625rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.5rem;
+  --text-body-sm: 0.8125rem;
+  --text-body-sm--line-height: 1.25rem;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.125rem;
+  --text-code: 0.9375rem;
+  --text-code--line-height: 1.5rem;
+  --text-metric: 1.25rem;
+  --text-metric--line-height: 1.75rem;
+
+  /* Elevation — design.md §5.3. Warm-tinted in light, near-black in dark,
+     because a warm shadow on a warm dark ground is invisible. */
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* design.md §3.1 — warm light palette. Hex equivalents are in that table;
+     OKLCH is authoritative. */
+  --background: oklch(0.985 0.006 85);
+  --foreground: oklch(0.255 0.018 55);
+  --card: oklch(1 0.002 85);
+  --card-foreground: oklch(0.255 0.018 55);
+  --popover: oklch(1 0.002 85);
+  --popover-foreground: oklch(0.255 0.018 55);
+  --primary: oklch(0.555 0.155 42);
+  --primary-hover: oklch(0.469 0.128 43);
+  --primary-foreground: oklch(0.99 0.012 85);
+  --secondary: oklch(0.945 0.014 78);
+  --secondary-foreground: oklch(0.3 0.02 55);
+  --muted: oklch(0.955 0.011 80);
+  --muted-foreground: oklch(0.505 0.022 62);
+  --accent: oklch(0.925 0.035 72);
+  --accent-foreground: oklch(0.3 0.03 50);
+  --destructive: oklch(0.545 0.205 27);
+  --destructive-foreground: oklch(0.99 0.01 85);
+  --success: oklch(0.505 0.115 150);
+  --success-foreground: oklch(0.99 0.01 85);
+
+  /* Decorative rules. Deliberately below 3:1 — see design.md §3.3. */
+  --border: oklch(0.895 0.013 78);
+  /* Interactive control boundaries. 3.50:1, WCAG 1.4.11. */
+  --input-border: oklch(0.62 0.018 72);
+  --input: oklch(0.62 0.018 72);
+  --ring: oklch(0.555 0.155 42);
+
+  --elevation-raised:
+    0 1px 2px oklch(0.255 0.018 55 / 0.06), 0 2px 8px oklch(0.255 0.018 55 / 0.04);
+  --elevation-overlay: 0 8px 32px oklch(0.255 0.018 55 / 0.12);
+
+  --radius: 0.75rem;
+
+  /* Unused in MVP: no charts (design.md P3) and no sidebar (§6.1). Kept so
+     stock shadcn components that reference them still resolve. */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.985 0.006 85);
+  --sidebar-foreground: oklch(0.255 0.018 55);
+  --sidebar-primary: oklch(0.555 0.155 42);
+  --sidebar-primary-foreground: oklch(0.99 0.012 85);
+  --sidebar-accent: oklch(0.925 0.035 72);
+  --sidebar-accent-foreground: oklch(0.3 0.03 50);
+  --sidebar-border: oklch(0.895 0.013 78);
+  --sidebar-ring: oklch(0.555 0.155 42);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  /* design.md §3.2 — warm charcoal, not blue-black. */
+  --background: oklch(0.185 0.012 58);
+  --foreground: oklch(0.955 0.008 85);
+  --card: oklch(0.235 0.014 58);
+  --card-foreground: oklch(0.955 0.008 85);
+  --popover: oklch(0.235 0.014 58);
+  --popover-foreground: oklch(0.955 0.008 85);
+  /* Lightened: terracotta at 0.555 L fails text contrast on a dark ground. */
+  --primary: oklch(0.72 0.145 48);
+  --primary-hover: oklch(0.78 0.135 50);
+  --primary-foreground: oklch(0.2 0.025 48);
+  --secondary: oklch(0.3 0.016 58);
+  --secondary-foreground: oklch(0.955 0.008 85);
+  --muted: oklch(0.285 0.014 58);
+  --muted-foreground: oklch(0.735 0.016 75);
+  --accent: oklch(0.34 0.03 58);
+  --accent-foreground: oklch(0.96 0.01 85);
+  --destructive: oklch(0.665 0.185 25);
+  --destructive-foreground: oklch(0.16 0.02 30);
+  --success: oklch(0.735 0.125 155);
+  --success-foreground: oklch(0.16 0.02 30);
+
+  --border: oklch(0.33 0.014 58);
+  --input-border: oklch(0.54 0.018 60);
+  --input: oklch(0.54 0.018 60);
+  --ring: oklch(0.72 0.145 48);
+
+  --elevation-raised: 0 1px 2px oklch(0 0 0 / 0.4);
+  --elevation-overlay: 0 8px 32px oklch(0 0 0 / 0.55);
+
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.235 0.014 58);
+  --sidebar-foreground: oklch(0.955 0.008 85);
+  --sidebar-primary: oklch(0.72 0.145 48);
+  --sidebar-primary-foreground: oklch(0.2 0.025 48);
+  --sidebar-accent: oklch(0.34 0.03 58);
+  --sidebar-accent-foreground: oklch(0.96 0.01 85);
+  --sidebar-border: oklch(0.33 0.014 58);
+  --sidebar-ring: oklch(0.72 0.145 48);
 }
 
 @layer base {
@@ -122,9 +180,21 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-body;
   }
   html {
     @apply font-sans;
+  }
+
+  /* design.md §5.4 — end state preserved, duration removed. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

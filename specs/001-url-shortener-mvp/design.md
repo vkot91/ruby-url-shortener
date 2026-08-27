@@ -527,14 +527,15 @@ class. Both use `@media (prefers-color-scheme: dark)` directly.
 | Component | Source | Notes |
 |---|---|---|
 | Button, Input, Label, Card, Dialog, DropdownMenu, Badge, Skeleton, Tooltip, Table | shadcn/ui (`base-nova`) | Stock. Only the token values change. |
-| Form, FormField, FormMessage | shadcn/ui | Wired to react-hook-form + zod per T070 |
+| `<FormMessage>` | **Ours** | The `base-nova` registry this project uses ships no `form` primitive — `shadcn add form` is a no-op here. T070 therefore wires react-hook-form and zod directly against `Input` and `Label`, and the one shared piece is the field-error line from §6.4. |
 | `<ShortLink>` | **Ours** | Renders the `snp.to/` prefix muted and the code in foreground, at `code` type. Used on §6.3, §6.4, §6.5, §6.6, §6.7, §6.8. The single place P1 is implemented. |
 | `<CopyButton>` | **Ours** | Wraps `<ShortLink>` or stands alone. Owns the 2-second success swap and the `aria-live` announcement. The single place P2 is implemented. |
 | `<ClickCount>` | **Ours** | `metric` type, tabular figures, fixed-width container. The single place P3 and P4 are implemented. |
 | `<CreatorLinkRow>` | **Ours** | Creator table row. Has a clicks column. |
 | `<AdminLinkRow>` | **Ours** | Admin table row. Has an owner column and structurally no clicks column. Deliberately *not* the same component as `<CreatorLinkRow>` with a flag — see P6. |
 | `<EmptyState>` | **Ours** | Heading, one line, optional action. Used by §6.3 and §6.7. |
-| `<ThemeToggle>` | **Ours** | system / light / dark, persisted in `localStorage`, applied by a pre-hydration inline script to avoid a flash of light theme. |
+| `<ThemeToggle>` | **Ours** | system / light / dark, persisted in `localStorage`, applied by a pre-hydration inline script to avoid a flash of light theme. Selecting "system" removes the stored value rather than writing the word, so a viewer who returns to system follows their OS if it changes later. |
+| `<AppShell>`, `<AccountMenu>` | **Ours** | §6.1. `AccountMenu` is where FR-003 becomes structural: a creator's document contains no admin control, not a disabled one. |
 
 Charting library: none, and adding one is a spec change, not an implementation detail.
 
