@@ -47,7 +47,8 @@ a piece of infrastructure tooling.
 
 Warm here is a specific, checkable thing, not a mood:
 
-- Neutrals carry a warm hue (55–85° in OKLCH), so surfaces read as paper rather than as gray.
+- Light-theme neutrals carry a warm hue (55–85° in OKLCH), so surfaces read as paper rather than as
+  gray. Dark keeps the hue at roughly 40% of the chroma (§3.2).
 - The accent is a terracotta orange, not the default blue that signals "generic SaaS".
 - Corners are generous (12px base radius rather than shadcn's 10px default).
 - Shadows are tinted with the warm foreground hue rather than pure black, so elevation looks like
@@ -170,40 +171,41 @@ substitution.
 
 ### 3.2 Dark theme
 
-Dark is a warm charcoal, not a blue-black. The primary lightens to `0.72 L` because terracotta at
-`0.555 L` on a dark ground fails text contrast.
+Dark is a near-neutral charcoal: surfaces carry about 40% of the light theme's chroma, brand colours
+keep theirs. The primary lightens to `0.72 L` because terracotta at `0.555 L` on a dark ground fails
+text contrast.
 
 | Token | OKLCH | Hex | Role |
 |---|---|---|---|
-| `--background` | `0.185 0.012 58` | `#17110d` | Page ground — warm charcoal |
-| `--foreground` | `0.955 0.008 85` | `#f3f0ea` | Body text |
-| `--card` | `0.235 0.014 58` | `#231d18` | Raised surface |
-| `--card-foreground` | `0.955 0.008 85` | `#f3f0ea` | |
-| `--popover` | `0.235 0.014 58` | `#231d18` | |
-| `--popover-foreground` | `0.955 0.008 85` | `#f3f0ea` | |
-| `--primary` | `0.72 0.145 48` | `#ec854d` | Lightened terracotta |
+| `--background` | `0.175 0.005 58` | `#12100e` | Page ground — near-neutral charcoal |
+| `--foreground` | `0.87 0.004 85` | `#d5d4d1` | Body text |
+| `--card` | `0.225 0.006 58` | `#1e1b19` | Raised surface |
+| `--card-foreground` | `0.87 0.004 85` | `#d5d4d1` | |
+| `--popover` | `0.225 0.006 58` | `#1e1b19` | |
+| `--popover-foreground` | `0.87 0.004 85` | `#d5d4d1` | |
+| `--primary` | `0.72 0.145 48` | `#ec854d` | Lightened terracotta — not neutralised |
 | `--primary-hover` | `0.78 0.135 50` | `#fc9c64` | Primary hover |
 | `--primary-foreground` | `0.20 0.025 48` | `#1f130c` | |
-| `--secondary` | `0.30 0.016 58` | `#342c26` | |
-| `--secondary-foreground` | `0.955 0.008 85` | `#f3f0ea` | |
-| `--muted` | `0.285 0.014 58` | `#302923` | |
-| `--muted-foreground` | `0.735 0.016 75` | `#afa89e` | |
-| `--accent` | `0.34 0.030 58` | `#443429` | |
-| `--accent-foreground` | `0.96 0.01 85` | `#f5f1ea` | |
+| `--secondary` | `0.29 0.007 58` | `#2e2b28` | |
+| `--secondary-foreground` | `0.87 0.004 85` | `#d5d4d1` | |
+| `--muted` | `0.275 0.006 58` | `#2a2725` | |
+| `--muted-foreground` | `0.735 0.007 75` | `#aca9a4` | |
+| `--accent` | `0.33 0.013 58` | `#3b342f` | |
+| `--accent-foreground` | `0.875 0.004 85` | `#d7d6d3` | |
 | `--destructive` | `0.665 0.185 25` | `#f05b57` | |
 | `--destructive-foreground` | `0.16 0.02 30` | `#150a08` | |
 | `--success` | `0.735 0.125 155` | `#61c086` | |
 | `--success-foreground` | `0.16 0.02 30` | `#150a08` | |
-| `--border` | `0.33 0.014 58` | `#3b342e` | |
-| `--input-border` | `0.54 0.018 60` | `#776c64` | |
+| `--border` | `0.32 0.006 58` | `#353230` | |
+| `--input-border` | `0.525 0.008 60` | `#6e6966` | |
 | `--ring` | `0.72 0.145 48` | `#ec854d` | |
 
 ### 3.3 Why `--border` and `--input-border` are separate
 
 WCAG 1.4.11 requires 3:1 for boundaries that are the only means of identifying a control. It does
-not require it for decorative rules. `--border` at 1.31:1 (light) and 1.52:1 (dark) is a
+not require it for decorative rules. `--border` at 1.31:1 (light) and 1.49:1 (dark) is a
 deliberately quiet card edge and would be wrong for a text input; `--input-border` at 3.50:1 and
-3.67:1 is what every input, select, textarea, and outline-variant button uses.
+3.51:1 is what every input, select, textarea, and outline-variant button uses.
 
 Collapsing the two — which shadcn's default palette does — either makes card edges shout or makes
 form fields fail. Keeping both is the reason this palette needs one extra token.
@@ -215,21 +217,21 @@ formula. Threshold is 4.5:1 for text and 3:1 for non-text boundaries.
 
 | Pair | Light | Dark |
 |---|---|---|
-| foreground on background | 15.16 | 16.37 |
-| foreground on card | 15.81 | 14.66 |
-| muted-foreground on background | 5.65 | 7.94 |
-| muted-foreground on card | 5.90 | 7.11 |
-| muted-foreground on muted | 5.17 | 6.12 |
+| foreground on background | 15.16 | 12.80 |
+| foreground on card | 15.81 | 11.55 |
+| muted-foreground on background | 5.65 | 8.08 |
+| muted-foreground on card | 5.90 | 7.28 |
+| muted-foreground on muted | 5.17 | 6.32 |
 | primary-foreground on primary | 4.93 | 6.99 |
-| primary as text on background | 4.87 | 7.17 |
-| primary as text on card | 5.07 | 6.42 |
-| primary-hover as text on background | 6.96 | 8.98 |
-| primary-foreground on primary-hover | 7.03 | 8.71 |
-| destructive as text on background | 5.27 | 5.61 |
+| primary as text on background | 4.87 | 7.29 |
+| primary as text on card | 5.07 | 6.58 |
+| primary-hover as text on background | 6.96 | 9.11 |
+| primary-foreground on primary-hover | 7.03 | 8.73 |
+| destructive as text on background | 5.27 | 5.71 |
 | destructive-foreground on destructive | 5.35 | 5.86 |
-| success as text on background | 5.33 | 8.37 |
-| input-border on background | 3.50 | 3.67 |
-| ring on background | 4.87 | 7.17 |
+| success as text on background | 5.33 | 8.51 |
+| input-border on background | 3.50 | 3.51 |
+| ring on background | 4.87 | 7.29 |
 
 **One rule falls out of this table**: `--primary` as *text* on `--muted` measures 4.45:1 in light
 theme and therefore fails. Primary-colored text is permitted on `--background` and `--card` only.
@@ -309,8 +311,8 @@ Three levels only. Shadow color is the foreground hue at low alpha, never `rgb(0
 | `raised` | `0 1px 2px oklch(0.255 0.018 55 / 0.06), 0 2px 8px oklch(0.255 0.018 55 / 0.04)` | `0 1px 2px oklch(0 0 0 / 0.4)` | Auth card, create-link card |
 | `overlay` | `0 8px 32px oklch(0.255 0.018 55 / 0.12)` | `0 8px 32px oklch(0 0 0 / 0.55)` | Dialog, dropdown, popover |
 
-Dark theme substitutes near-black shadows because a warm-tinted shadow on a warm dark ground is
-invisible; separation there comes from `--card` being lighter than `--background`.
+Dark theme substitutes near-black shadows because a tinted shadow on a ground this dark is
+invisible whatever its hue; separation there comes from `--card` being lighter than `--background`.
 
 ### 5.4 Motion
 
@@ -527,14 +529,15 @@ class. Both use `@media (prefers-color-scheme: dark)` directly.
 | Component | Source | Notes |
 |---|---|---|
 | Button, Input, Label, Card, Dialog, DropdownMenu, Badge, Skeleton, Tooltip, Table | shadcn/ui (`base-nova`) | Stock. Only the token values change. |
-| Form, FormField, FormMessage | shadcn/ui | Wired to react-hook-form + zod per T070 |
+| `<FormMessage>` | **Ours** | The `base-nova` registry this project uses ships no `form` primitive — `shadcn add form` is a no-op here. T070 therefore wires react-hook-form and zod directly against `Input` and `Label`, and the one shared piece is the field-error line from §6.4. |
 | `<ShortLink>` | **Ours** | Renders the `snp.to/` prefix muted and the code in foreground, at `code` type. Used on §6.3, §6.4, §6.5, §6.6, §6.7, §6.8. The single place P1 is implemented. |
 | `<CopyButton>` | **Ours** | Wraps `<ShortLink>` or stands alone. Owns the 2-second success swap and the `aria-live` announcement. The single place P2 is implemented. |
 | `<ClickCount>` | **Ours** | `metric` type, tabular figures, fixed-width container. The single place P3 and P4 are implemented. |
 | `<CreatorLinkRow>` | **Ours** | Creator table row. Has a clicks column. |
 | `<AdminLinkRow>` | **Ours** | Admin table row. Has an owner column and structurally no clicks column. Deliberately *not* the same component as `<CreatorLinkRow>` with a flag — see P6. |
 | `<EmptyState>` | **Ours** | Heading, one line, optional action. Used by §6.3 and §6.7. |
-| `<ThemeToggle>` | **Ours** | system / light / dark, persisted in `localStorage`, applied by a pre-hydration inline script to avoid a flash of light theme. |
+| `<ThemeToggle>` | **Ours** | system / light / dark on top of `next-themes` (`attribute="class"`, `storageKey="snip-theme"`), which applies the class before first paint so dark theme never flashes light, mirrors it into `color-scheme` so native controls and scrollbars follow, and syncs across tabs. "System" stays live: the resolved theme tracks the OS if it changes later. |
+| `<AppShell>`, `<AccountMenu>` | **Ours** | §6.1. `AccountMenu` is where FR-003 becomes structural: a creator's document contains no admin control, not a disabled one. |
 
 Charting library: none, and adding one is a spec change, not an implementation detail.
 
@@ -704,7 +707,7 @@ rather than accepted on sight:
   §3, bind Figtree and JetBrains Mono via `next/font/google` in `frontend/src/app/layout.tsx`, and
   set `--radius` to `0.75rem`. Phase 2.
 - **T121** — Install the shadcn components listed in §7 and build the app shell from §6.1,
-  including `<ThemeToggle>` with the pre-hydration script. Phase 2.
+  including `<ThemeToggle>` on `next-themes`. Phase 2.
 - **T122** — Build the shared components from §7 — `<ShortLink>`, `<CopyButton>`, `<ClickCount>`,
   `<EmptyState>` — with component tests for the copy success swap and the tabular-figure column
   width. Phase 4, before T069.
