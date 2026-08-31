@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, JetBrains_Mono } from "next/font/google";
 
-import { ThemeScript } from "@/components/theme-script";
+import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
 
@@ -29,11 +29,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-      </head>
       <body className={`${figtree.variable} ${jetbrainsMono.variable} antialiased`}>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -534,7 +534,7 @@ class. Both use `@media (prefers-color-scheme: dark)` directly.
 | `<CreatorLinkRow>` | **Ours** | Creator table row. Has a clicks column. |
 | `<AdminLinkRow>` | **Ours** | Admin table row. Has an owner column and structurally no clicks column. Deliberately *not* the same component as `<CreatorLinkRow>` with a flag — see P6. |
 | `<EmptyState>` | **Ours** | Heading, one line, optional action. Used by §6.3 and §6.7. |
-| `<ThemeToggle>` | **Ours** | system / light / dark, persisted in `localStorage`, applied by a pre-hydration inline script to avoid a flash of light theme. Selecting "system" removes the stored value rather than writing the word, so a viewer who returns to system follows their OS if it changes later. |
+| `<ThemeToggle>` | **Ours** | system / light / dark on top of `next-themes` (`attribute="class"`, `storageKey="snip-theme"`), which applies the class before first paint so dark theme never flashes light, mirrors it into `color-scheme` so native controls and scrollbars follow, and syncs across tabs. "System" stays live: the resolved theme tracks the OS if it changes later. |
 | `<AppShell>`, `<AccountMenu>` | **Ours** | §6.1. `AccountMenu` is where FR-003 becomes structural: a creator's document contains no admin control, not a disabled one. |
 
 Charting library: none, and adding one is a spec change, not an implementation detail.
@@ -705,7 +705,7 @@ rather than accepted on sight:
   §3, bind Figtree and JetBrains Mono via `next/font/google` in `frontend/src/app/layout.tsx`, and
   set `--radius` to `0.75rem`. Phase 2.
 - **T121** — Install the shadcn components listed in §7 and build the app shell from §6.1,
-  including `<ThemeToggle>` with the pre-hydration script. Phase 2.
+  including `<ThemeToggle>` on `next-themes`. Phase 2.
 - **T122** — Build the shared components from §7 — `<ShortLink>`, `<CopyButton>`, `<ClickCount>`,
   `<EmptyState>` — with component tests for the copy success swap and the tabular-figure column
   width. Phase 4, before T069.

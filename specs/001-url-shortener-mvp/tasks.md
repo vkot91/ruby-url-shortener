@@ -73,7 +73,7 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 - [X] T123 Generate the design canvas with Claude Design from the brief in design.md §10 — fifteen artboards covering the nine surfaces, with the link list and the moderation queue in both themes — and record the published canvas URL and the artboard index in design.md §10 so the written spec and the visual reference point at each other. Blocks T121 and T122: a component built before its screen has been drawn gets its API guessed rather than derived
 - [X] T120 [P] Apply the design tokens from design.md §3 — replace the `:root` and `.dark` blocks in `frontend/src/app/globals.css`, set `--radius` to `0.75rem`, add `--input-border` and `--success`, add `--primary-hover`, and bind Figtree and JetBrains Mono via `next/font/google` in `frontend/src/app/layout.tsx` (design.md §3, §4, §5.2)
-- [X] T121 Install the shadcn components listed in design.md §7 and build the dashboard app shell in `frontend/src/app/(dashboard)/layout.tsx`, including `<ThemeToggle>` with a pre-hydration script so dark theme does not flash light (design.md §6.1; FR-003 — creators get no admin affordance rendered at all)
+- [X] T121 Install the shadcn components listed in design.md §7 and build the dashboard app shell in `frontend/src/app/(dashboard)/layout.tsx`, including `<ThemeToggle>` on `next-themes` so dark theme does not flash light (design.md §6.1; FR-003 — creators get no admin affordance rendered at all)
 
 **Checkpoint**: Schema migrates cleanly; models load; the app shell renders in both themes; user story work can begin.
 

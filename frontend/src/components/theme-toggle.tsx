@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTheme } from "next-themes";
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,38 +12,20 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { applyTheme, isTheme, readStoredTheme, type Theme } from "@/lib/theme";
 
-const OPTIONS: ReadonlyArray<{ value: Theme; label: string; Icon: typeof SunIcon }> = [
+const OPTIONS = [
   { value: "system", label: "System", Icon: MonitorIcon },
   { value: "light", label: "Light", Icon: SunIcon },
   { value: "dark", label: "Dark", Icon: MoonIcon },
-];
+] as const;
 
 export function ThemeToggle() {
-  const [theme, setTheme] = React.useState<Theme>("system");
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setTheme(readStoredTheme());
+    setMounted(true);
   }, []);
-
-  React.useEffect(() => {
-    if (theme !== "system") return;
-
-    const query = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => applyTheme("system");
-
-    query.addEventListener("change", onChange);
-
-    return () => query.removeEventListener("change", onChange);
-  }, [theme]);
-
-  const select = (value: string) => {
-    if (!isTheme(value)) return;
-
-    setTheme(value);
-    applyTheme(value);
-  };
 
   const active = OPTIONS.find((option) => option.value === theme) ?? OPTIONS[0];
 
@@ -50,13 +33,17 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon" aria-label={`Theme: ${active.label}`}>
-            <active.Icon aria-hidden="true" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={mounted ? `Theme: ${active.label}` : "Theme"}
+          >
+            <active.Icon aria-hidden="true" className={mounted ? undefined : "opacity-0"} />
           </Button>
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuRadioGroup value={theme} onValueChange={select}>
+        <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={setTheme}>
           {OPTIONS.map(({ value, label, Icon }) => (
             <DropdownMenuRadioItem key={value} value={value}>
               <Icon aria-hidden="true" className="mr-2 size-4" />
