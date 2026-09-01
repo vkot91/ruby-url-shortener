@@ -164,20 +164,32 @@ gets 403 (FR-003). `/admin/health` returns operational metrics and **no customer
 The comparison is the project's headline deliverable, so the two runs must differ only in the
 subject under test.
 
+Run from the repository root. `load/README.md` documents the reference environment these
+commands assume, and why each part of it is what it is.
+
 ```bash
-bin/rails runner load/seed.rb                     # fixed 10k-link corpus, deterministic seed
+./load/seed.sh                                    # fixed 10k-link corpus, deterministic seed
 
 # Restart the server between runs with the flag flipped. It is an environment
 # variable read once at boot (config/application.rb), so the process has to come
 # back up — editing backend/.env and leaving Puma running measures the old path.
-REDIRECT_CACHE_ENABLED=false bin/rails s
-k6 run --out json=load/results/naive.json load/redirect.js
+./load/serve.sh false
+k6 run -e RESULT=load/results/naive.json load/redirect.js
 
-REDIRECT_CACHE_ENABLED=true bin/rails s
-k6 run --out json=load/results/cached.json load/redirect.js
+./load/serve.sh true
+k6 run -e RESULT=load/results/cached.json load/redirect.js
 ```
 
 Same host, same corpus, same script, same k6 flags. Only the flag changes.
+
+The two scripts exist so that "same host" is enforced rather than remembered: they run the
+backend in production mode against a dedicated `shortener_load` database, with the thread count
+`backend/.env` sets, and they are the only thing either run boots.
+
+`RESULT` rather than `--out json=`: that flag writes one line per metric sample, which for a run
+this size is gigabytes and not something anyone can commit or read. `redirect.js` exports
+`handleSummary` and writes the same numbers, broken down per offered request rate, to the path
+in `RESULT`.
 
 **Pass conditions**
 - Cached run sustains ≥5 000 redirects/second (SC-004)
