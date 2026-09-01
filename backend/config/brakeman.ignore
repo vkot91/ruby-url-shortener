@@ -1,0 +1,28 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Redirect",
+      "warning_code": 18,
+      "fingerprint": "de0738d4ef91cfd783dd7e521693f12bd8c50b3f22331e6737ead4753d429a0e",
+      "check_name": "Redirect",
+      "message": "Possible unprotected redirect",
+      "file": "app/controllers/redirects_controller.rb",
+      "line": 41,
+      "link": "https://brakemanscanner.org/docs/warning_types/redirect/",
+      "code": "redirect_to(Link.find_by(:code => params[:code]).destination_url, :status => :found, :allow_other_host => true)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "RedirectsController",
+        "method": "show"
+      },
+      "user_input": "Link.find_by(:code => params[:code]).destination_url",
+      "confidence": "Weak",
+      "cwe_id": [
+        601
+      ],
+      "note": "Redirecting to a host we do not control is the product. Brakeman is right that this is an open redirect and wrong that it is a defect: a shortener whose redirect refused other hosts would redirect nowhere. What makes it safe is not the redirect but what is allowed to reach the column it reads. Urls::SafetyValidator (D11) refuses any destination that is not http(s), that resolves off the public internet, or that points back at our own short domain, and it runs again on every destination edit (T074) rather than only at creation; Urls::Normalizer canonicalises what it accepts; and the destination is stored, never taken from the request. The other half of the answer is that the response carries Cache-Control: no-store and sets no cookie, so a visitor's browser and session state are untouched by where they are sent. Re-open this if the safety validator is ever bypassed on a write path, or if a destination ever reaches this line from params rather than from the row."
+    }
+  ],
+  "brakeman_version": "8.0.6"
+}

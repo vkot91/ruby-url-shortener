@@ -1,0 +1,40 @@
+meta {
+  name: Sign out
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/sessions
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refresh_token": "{{refreshToken}}"
+  }
+}
+
+tests {
+  test("answers 204 with no body", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Revokes the whole family, not the one token: signing out means "end this
+  session", and a session is the family that sign-in opened.
+
+  It answers 204 whether or not the token was found. Reporting "no such token"
+  would let anyone holding a candidate string ask us to confirm it — try it by
+  editing the body to a made-up string.
+
+  Run this last in the folder. Afterwards `refreshToken` is dead; the access
+  token stays technically valid until it expires (research.md D10 accepts that
+  bounded window), so `02 - Links` still works for up to 15 minutes.
+}

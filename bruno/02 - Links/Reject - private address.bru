@@ -1,0 +1,41 @@
+meta {
+  name: Reject - private address
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/links
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "destination_url": "http://169.254.169.254/latest/meta-data/"
+  }
+}
+
+tests {
+  test("refused as private_address", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.body.error.code).to.equal("private_address");
+  });
+}
+
+docs {
+  research.md D11, and the reason the validator exists: the cloud metadata
+  endpoint. The rejection comes from the *address*, never from the name — the
+  host is resolved and every address it returns is checked, so a hostname the
+  attacker controls pointing at 127.0.0.1 is refused just the same.
+
+  Twenty-two ranges are blocked. Others worth pasting in: `http://127.0.0.1/`,
+  `http://10.0.0.7/`, `http://[::1]/`, `http://[::ffff:127.0.0.1]/`,
+  `http://192.168.1.1/`.
+
+  A literal IP is judged without any DNS lookup at all.
+}

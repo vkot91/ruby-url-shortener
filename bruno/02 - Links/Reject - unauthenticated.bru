@@ -1,0 +1,39 @@
+meta {
+  name: Reject - unauthenticated
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/v1/links
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "destination_url": "https://example.com/"
+  }
+}
+
+tests {
+  test("refuses without a bearer token", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.body.error.code).to.equal("unauthenticated");
+  });
+}
+
+docs {
+  `auth: none` on this one request overrides the collection's bearer auth, so it
+  goes out with no Authorization header.
+
+  `unauthenticated` and `token_expired` are deliberately different codes: an
+  expired token means "refresh and retry", anything else means "sign in again".
+  A client that cannot tell them apart either bounces the user out of a working
+  session or retries forever against a token that will never work. To see the
+  other one, paste a 15-minute-old access token into the collection auth.
+}

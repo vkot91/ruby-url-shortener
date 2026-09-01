@@ -1,0 +1,41 @@
+meta {
+  name: Register - duplicate email
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/registrations
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{newAccountEmail}}",
+    "password": "{{newAccountPassword}}"
+  }
+}
+
+tests {
+  test("refuses the second account on the same address", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.body.error.code).to.equal("validation_failed");
+  });
+
+  test("says which field failed, so the form can put the message beside it", function () {
+    expect(res.body.error.details.email).to.include("has already been taken");
+  });
+}
+
+docs {
+  Replays the address `Register` just used. There is no uniqueness *validation*
+  behind this — a validation is a check-then-write with a window in it
+  (Principle III). The unique index raises, and the controller translates
+  `ActiveRecord::RecordNotUnique` into the envelope a validation failure would
+  have produced.
+}

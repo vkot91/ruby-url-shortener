@@ -12,6 +12,8 @@ x-backend-env: &backend-env
   # them keeps `allkeys-lru` from evicting queued jobs (D9, Principle IV).
   REDIS_URL: redis://redis:6379/0
   SIDEKIQ_REDIS_URL: redis://redis:6379/1
+  SHORT_DOMAIN: ${SHORT_DOMAIN}
+  APP_URL: ${APP_URL}
 
 services:
   postgres:
@@ -53,9 +55,20 @@ services:
     # db:prepare on boot means a fresh clone needs only `docker compose up`.
     # The pid file is removed first: tmp/ is bind-mounted, so a container killed
     # without a clean shutdown leaves one behind and Puma then refuses to boot.
-    command: sh -c "rm -f tmp/pids/server.pid && ./bin/rails db:prepare && ./bin/rails server -b 0.0.0.0 -p 3001"
+    #
+    # `bundle check || bundle install` is what keeps the bind-mounted source and
+    # the baked-in gems from drifting apart. /rails is mounted from the host, so
+    # a Gemfile.lock edited outside the container — a `bundle install` run on the
+    # host for editor tooling, a gem added on a branch — is visible instantly
+    # while the gems it names are not, and bundler aborts with GemNotFound. The
+    # check is a no-op when they already agree.
+    command: >
+      sh -c "rm -f tmp/pids/server.pid &&
+             (bundle check || bundle install) &&
+             ./bin/rails db:prepare &&
+             ./bin/rails server -b 0.0.0.0 -p 3001"
     environment: *backend-env
-    volumes: ["./backend:/rails"]
+    volumes: ["./backend:/rails", "bundle:/bundle"]
     ports: ["3001:3001"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -65,9 +78,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    command: bundle exec sidekiq -C config/sidekiq.yml
+    command: >
+      sh -c "(bundle check || bundle install) &&
+             bundle exec sidekiq -C config/sidekiq.yml"
     environment: *backend-env
-    volumes: ["./backend:/rails"]
+    volumes: ["./backend:/rails", "bundle:/bundle"]
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -87,3 +102,7 @@ services:
 
 volumes:
   pgdata:
+  # Installed gems, shared by backend and sidekiq. Seeded from the image layer on
+  # first `up` and written to by the boot-time `bundle install`, so a gem change
+  # survives a restart and costs a rebuild only when the base image itself moves.
+  bundle:

@@ -1,0 +1,41 @@
+meta {
+  name: Refresh - replay a spent token
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refresh_token": "{{spentRefreshToken}}"
+  }
+}
+
+tests {
+  test("detects the reuse and ends the whole family", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.body.error.code).to.equal("token_reuse_detected");
+  });
+}
+
+docs {
+  Family-based reuse detection. Presenting an already-rotated token means either
+  the client replayed it or somebody stole it, and there is no way to tell which
+  — so the entire family is revoked and everyone holding one of its tokens has
+  to sign in again.
+
+  The code is distinct from `invalid_refresh_token` because the situations are:
+  this one means a token that *was* valid has been presented twice.
+
+  After running this, `refreshToken` no longer works either. Re-run `Sign in`
+  before continuing.
+}

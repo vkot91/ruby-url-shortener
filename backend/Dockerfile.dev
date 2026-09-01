@@ -8,6 +8,13 @@ RUN apt-get update -qq && \
 
 WORKDIR /rails
 
+# Gems live outside /rails, which is bind-mounted over at run time, and outside
+# the image's default /usr/local/bundle so compose can mount a named volume here
+# without shadowing bundler's own binstubs. The volume is seeded from this layer
+# on first `up`; after that `bundle check || bundle install` in the compose
+# command tops it up whenever Gemfile.lock moves, so a gem change needs no rebuild.
+ENV BUNDLE_PATH=/bundle
+
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 

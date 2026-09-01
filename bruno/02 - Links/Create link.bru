@@ -1,0 +1,67 @@
+meta {
+  name: Create link
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/links
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "destination_url": "example.com/Hello?utm_source=poster",
+    "name": "Conference poster"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("linkId", res.body.id);
+    bru.setVar("linkCode", res.body.code);
+  }
+}
+
+tests {
+  test("creates the link", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("allocates a seven-character alphanumeric code", function () {
+    expect(res.body.code).to.match(/^[A-Za-z0-9]{7}$/);
+  });
+
+  test("hands back a short URL on the short domain", function () {
+    expect(res.body.short_url).to.equal(`https://${bru.getEnvVar("shortDomain")}/${res.body.code}`);
+  });
+
+  test("normalises the destination without changing what it means", function () {
+    // https:// assumed, host lower-cased, default port and empty query dropped.
+    // The path keeps its capital H and the query keeps utm_source: rewriting
+    // either would change the address the owner pasted.
+    expect(res.body.destination_url).to.equal("https://example.com/Hello?utm_source=poster");
+  });
+
+  test("starts at zero clicks", function () {
+    expect(res.body.clicks_count).to.equal(0);
+  });
+}
+
+docs {
+  FR-005. The happy path, and the request that seeds `linkCode` for the
+  `03 - Redirect` folder.
+
+  The code is allocated by inserting and rescuing the unique-index violation,
+  never by asking whether a candidate exists first (D3, Principle III). There is
+  no existence query on this path at all.
+
+  Rate limited to 30/hour, keyed by account rather than by origin — the limit is
+  a property of the plan, not of where the request came from. Note what it does
+  *not* touch: `GET /:code` is never throttled (FR-019, Principle I).
+}

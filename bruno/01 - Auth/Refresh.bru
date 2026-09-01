@@ -1,0 +1,51 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refresh_token": "{{refreshToken}}"
+  }
+}
+
+script:pre-request {
+  // Keep the token we are about to spend, so `Refresh - replay a spent token`
+  // has something already-rotated to present.
+  bru.setVar("spentRefreshToken", bru.getVar("refreshToken"));
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("accessToken", res.body.access_token);
+    bru.setVar("refreshToken", res.body.refresh_token);
+  }
+}
+
+tests {
+  test("rotates the pair", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.body.refresh_token).to.not.equal(bru.getVar("spentRefreshToken"));
+  });
+}
+
+docs {
+  research.md D10. The only endpoint that can extend a session, and therefore
+  the only one that has to be revocable. It is unauthenticated on purpose: a
+  client reaches here precisely because its access token has expired, and the
+  refresh token is the credential.
+
+  Refresh tokens are opaque and single-use. Every rotation issues a successor in
+  the same family and marks the presented token spent.
+}

@@ -1,0 +1,37 @@
+meta {
+  name: Reject - not a URL
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/links
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "destination_url": "this is not an address"
+  }
+}
+
+tests {
+  test("refused as invalid_url", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.body.error.code).to.equal("invalid_url");
+  });
+}
+
+docs {
+  FR-006. One of six rejection codes, all of which travel through a single
+  `Links::Rejection` carrying a `code` — so the controller has one rescue rather
+  than a list that eventually misses a member and turns a 422 into a 500.
+
+  The front end branches on `error.code` to put the message beside the right
+  field; `error.message` is for humans and is free to change.
+}

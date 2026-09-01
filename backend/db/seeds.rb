@@ -1,9 +1,29 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
+# frozen_string_literal: true
+
+# Idempotent, and run automatically by `db:prepare` when the database is
+# created. Re-run at any time with `bin/rails db:seed`.
+
+# The account the Bruno collection signs in as (bruno/01 - Auth/Sign in).
 #
-# Example:
+# A fixed address and password, so signing in is one request rather than
+# "register first, then sign in as whoever that made". The credentials are
+# committed on purpose — they are a development fixture, not a secret, and the
+# whole point is that they are the same on every machine and after every
+# `db:reset`.
 #
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
+# Guarded rather than merely discouraged: an account with a published password
+# is a back door, and a seed file is exactly the sort of thing that gets run
+# against production once.
+if Rails.env.production?
+  warn "Skipping the manual-testing account: it must never exist in production."
+else
+  account = Account.find_or_initialize_by(email: "dev@snip.test")
+
+  # Assigned every run rather than only on create, so a seed re-run is also the
+  # way to recover the account after someone changes its password by hand.
+  account.password = "development password"
+
+  account.save!
+
+  Rails.logger.info { "Seeded the manual-testing account: #{account.email}" }
+end

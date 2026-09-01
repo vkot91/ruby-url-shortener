@@ -89,30 +89,45 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 
 ### 3A — Naive implementation (no cache)
 
-- [ ] T023 [P] [US1] Request spec for registration and sign-in in `backend/spec/requests/api/v1/auth_spec.rb` — asserts the token pair shape and that no `Set-Cookie` is emitted
-- [ ] T024 [P] [US1] Unit spec for URL normalisation edge cases in `backend/spec/services/urls/normalizer_spec.rb`
-- [ ] T025 [P] [US1] Unit spec for SSRF rejection (private, loopback, link-local, self-referential, non-http scheme) in `backend/spec/services/urls/safety_validator_spec.rb`
-- [ ] T026 [P] [US1] Unit spec asserting code allocation retries on `RecordNotUnique` and never issues an existence query in `backend/spec/services/links/code_generator_spec.rb`
-- [ ] T027 [US1] `Api::V1::RegistrationsController` and `Api::V1::SessionsController` in `backend/app/controllers/api/v1/` returning a `TokenPair` per contracts/openapi.yaml (FR-001)
-- [ ] T116 [US1] `Api::V1::Auth::RefreshController#create` in `backend/app/controllers/api/v1/auth/refresh_controller.rb` — rotates the pair, returns `invalid_refresh_token` or `token_reuse_detected` on 401 (contracts/openapi.yaml `/auth/refresh`)
-- [ ] T117 [P] [US1] Request spec for the full token lifecycle in `backend/spec/requests/api/v1/token_lifecycle_spec.rb`: sign in, refresh, confirm the old token is dead, replay it, confirm the family is gone and the client must sign in again
-- [ ] T112 [US1] `rate_limit` on `Api::V1::RegistrationsController#create`, `Api::V1::SessionsController#create`, and the refresh endpoint — per hashed IP on all three, plus per hashed email on sign-in (FR-036)
-- [ ] T113 [P] [US1] Request spec asserting the auth limiters return 429 and that the refusal body is indistinguishable for a registered and an unregistered address, in `backend/spec/requests/api/v1/auth_rate_limit_spec.rb` (FR-036)
-- [ ] T028 [P] [US1] `Urls::Normalizer` in `backend/app/services/urls/normalizer.rb` (FR-008)
-- [ ] T029 [P] [US1] `Urls::SafetyValidator` in `backend/app/services/urls/safety_validator.rb` — resolves DNS before accepting, re-usable on edit (FR-006, research.md D11)
-- [ ] T030 [P] [US1] `Links::CodeGenerator` in `backend/app/services/links/code_generator.rb` — 7 chars base62 via SecureRandom (FR-009)
-- [ ] T031 [US1] `Links::Creator` in `backend/app/services/links/creator.rb` — insert-and-rescue allocation, no check-then-write (FR-010, Principle III)
-- [ ] T032 [US1] `Api::V1::LinksController#create` with `rate_limit` and the 50-link free cap in `backend/app/controllers/api/v1/links_controller.rb` (FR-004, FR-005)
-- [ ] T033 [US1] Request spec covering all six `error.code` rejection reasons in `backend/spec/requests/api/v1/links_create_spec.rb`
-- [ ] T034 [US1] Add `REDIRECT_CACHE_ENABLED` flag to `backend/config/application.rb`, defaulting to false (Principle II — both paths stay runnable)
-- [ ] T035 [US1] Naive `RedirectsController#show` querying Postgres on every request in `backend/app/controllers/redirects_controller.rb` (FR-013 — satisfies the redirect itself; FR-014 deliberately unmet until T050)
-- [ ] T036 [US1] Synchronous per-click `INSERT` in the naive path, isolated so 3C can replace it in one place
-- [ ] T037 [P] [US1] Not-found page view in `backend/app/views/pages/not_found.html.erb` (FR-017) — layout and the inlined CSS subset per design.md §6.9 and §8 (canvas 14)
-- [ ] T038 [US1] Redirect request spec asserting 302, `Location`, `Cache-Control: no-store`, and **absence of `Set-Cookie`** in `backend/spec/requests/redirect_spec.rb` (FR-015, FR-016)
-- [ ] T039 [US1] Spec asserting two accounts shortening an identical destination get two distinct codes and independent counters in `backend/spec/requests/api/v1/links_dedup_spec.rb` (FR-011)
-- [ ] T105 [US1] Spec asserting redirects are never throttled: an account far over its link cap and past its hourly creation limit still redirects, and no rate limiter applies to `GET /:code`, in `backend/spec/requests/redirect_never_throttled_spec.rb` (FR-019, Principle I)
+- [X] T023 [P] [US1] Request spec for registration and sign-in in `backend/spec/requests/api/v1/auth_spec.rb` — asserts the token pair shape and that no `Set-Cookie` is emitted
+- [X] T024 [P] [US1] Unit spec for URL normalisation edge cases in `backend/spec/services/urls/normalizer_spec.rb`
+- [X] T025 [P] [US1] Unit spec for SSRF rejection (private, loopback, link-local, self-referential, non-http scheme) in `backend/spec/services/urls/safety_validator_spec.rb`
+- [X] T026 [P] [US1] Unit spec asserting code allocation retries on `RecordNotUnique` and never issues an existence query in `backend/spec/services/links/code_generator_spec.rb`
+- [X] T027 [US1] `Api::V1::RegistrationsController` and `Api::V1::SessionsController` in `backend/app/controllers/api/v1/` returning a `TokenPair` per contracts/openapi.yaml (FR-001)
+- [X] T116 [US1] `Api::V1::Auth::RefreshController#create` in `backend/app/controllers/api/v1/auth/refresh_controller.rb` — rotates the pair, returns `invalid_refresh_token` or `token_reuse_detected` on 401 (contracts/openapi.yaml `/auth/refresh`)
+- [X] T117 [P] [US1] Request spec for the full token lifecycle in `backend/spec/requests/api/v1/token_lifecycle_spec.rb`: sign in, refresh, confirm the old token is dead, replay it, confirm the family is gone and the client must sign in again
+- [X] T112 [US1] `rate_limit` on `Api::V1::RegistrationsController#create`, `Api::V1::SessionsController#create`, and the refresh endpoint — per hashed IP on all three, plus per hashed email on sign-in (FR-036)
+- [X] T113 [P] [US1] Request spec asserting the auth limiters return 429 and that the refusal body is indistinguishable for a registered and an unregistered address, in `backend/spec/requests/api/v1/auth_rate_limit_spec.rb` (FR-036)
+- [X] T028 [P] [US1] `Urls::Normalizer` in `backend/app/services/urls/normalizer.rb` (FR-008)
+- [X] T029 [P] [US1] `Urls::SafetyValidator` in `backend/app/services/urls/safety_validator.rb` — resolves DNS before accepting, re-usable on edit (FR-006, research.md D11)
+- [X] T030 [P] [US1] `Links::CodeGenerator` in `backend/app/services/links/code_generator.rb` — 7 chars base62 via SecureRandom (FR-009)
+- [X] T031 [US1] `Links::Creator` in `backend/app/services/links/creator.rb` — insert-and-rescue allocation, no check-then-write (FR-010, Principle III)
+- [X] T032 [US1] `Api::V1::LinksController#create` with `rate_limit` and the 50-link free cap in `backend/app/controllers/api/v1/links_controller.rb` (FR-004, FR-005)
+- [X] T033 [US1] Request spec covering all six `error.code` rejection reasons in `backend/spec/requests/api/v1/links_create_spec.rb`
+- [X] T034 [US1] Add `REDIRECT_CACHE_ENABLED` flag to `backend/config/application.rb`, defaulting to false (Principle II — both paths stay runnable)
+- [X] T035 [US1] Naive `RedirectsController#show` querying Postgres on every request in `backend/app/controllers/redirects_controller.rb` (FR-013 — satisfies the redirect itself; FR-014 deliberately unmet until T050)
+- [X] T036 [US1] Synchronous per-click `INSERT` in the naive path, isolated so 3C can replace it in one place
+- [X] T037 [P] [US1] Not-found page view in `backend/app/views/pages/not_found.html.erb` (FR-017) — layout and the inlined CSS subset per design.md §6.9 and §8 (canvas 14)
+- [X] T038 [US1] Redirect request spec asserting 302, `Location`, `Cache-Control: no-store`, and **absence of `Set-Cookie`** in `backend/spec/requests/redirect_spec.rb` (FR-015, FR-016)
+- [X] T039 [US1] Spec asserting two accounts shortening an identical destination get two distinct codes and independent counters in `backend/spec/requests/api/v1/links_dedup_spec.rb` (FR-011)
+- [X] T105 [US1] Spec asserting redirects are never throttled: an account far over its link cap and past its hourly creation limit still redirects, and no rate limiter applies to `GET /:code`, in `backend/spec/requests/redirect_never_throttled_spec.rb` (FR-019, Principle I)
 
-**Checkpoint 3A**: Links can be created and redirect correctly. Deliberately slow.
+**Checkpoint 3A**: Links can be created and redirect correctly. Deliberately slow. ✅ 2026-08-31
+
+Two things landed alongside 3A that the task list did not name, both because a
+3A task needed them:
+
+- `config/initializers/rate_limit.rb` — Rails' `rate_limit` counts in
+  `Rails.cache`, which is `:null_store` in test. T112 and T113 are untestable
+  against a store that counts nowhere, so the limiters were given their own
+  (Redis in production, in-process in test).
+- `Urls::HostResolver` — the seam where a hostname becomes addresses, split out
+  of T029's validator so the SSRF rules can be tested against fixed addresses
+  rather than against live DNS (`spec/support/host_resolution.rb`).
+
+Also new: the `SHORT_DOMAIN` and `APP_URL` environment variables, needed by the
+self-referential check, `short_url`, and the not-found page's link across to the
+dashboard.
 
 ### 3B — Baseline measurement (produces no product code)
 
@@ -213,7 +228,7 @@ Web application: `backend/` (Rails 8, Ruby 3.4), `frontend/` (Next.js 15), `load
 - [ ] T119 [US4] Spec asserting a banned account's refresh tokens are all revoked and that its access token stops working within `Auth::AccessToken::LIFETIME`, in `backend/spec/requests/api/v1/admin/account_ban_spec.rb` — the recorded D10 window, asserted rather than assumed
 - [ ] T109 [P] [US4] `Admin::ReportsController#index` with status filter, oldest first, in `backend/app/controllers/api/v1/admin/reports_controller.rb` (FR-033; the queue page in T094 has nothing to call without it)
 - [ ] T090 [P] [US4] `Admin::BlockedDomainsController` index and create in `backend/app/controllers/api/v1/admin/blocked_domains_controller.rb` (FR-032)
-- [ ] T091 [US4] Wire the blocklist check into `Links::Creator` and `Links::Updater` (FR-007)
+- [ ] T091 [US4] Wire the blocklist check into `Links::Updater` (FR-007) — the `Links::Creator` half landed early, in 3A: T033 requires the create endpoint to return all six `error.code` values and `blocked_domain` is one of them, so the check could not wait for Phase 6
 - [ ] T092 [US4] `Admin::HealthController#show` returning cache hit ratio, redirect p50/p99, redirects per second, click buffer depth, flush lag, Redis memory in `backend/app/controllers/api/v1/admin/health_controller.rb` (FR-035)
 - [ ] T093 [US4] Spec asserting `/admin/health` exposes no customer marketing analytics in `backend/spec/requests/api/v1/admin/health_spec.rb` (FR-034, Principle V)
 - [ ] T094 [P] [US4] Admin moderation queue page in `frontend/src/app/admin/reports/page.tsx` — inline ban actions and no clicks column, per design.md §6.7 (canvas 10, 11, 13; SC-010, FR-034)

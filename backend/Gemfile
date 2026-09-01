@@ -61,4 +61,9 @@ group :development, :test do
   # Ruby LSP needs rubocop as a direct dependency to use it as the formatter.
   gem "rubocop", require: false
   gem "rubocop-rspec", require: false
+
+  # Ruby LSP's test explorer only knows Minitest and Test::Unit natively; without
+  # this addon it runs a spec file as `ruby -Ispec <file>`, which never loads
+  # rspec-core and dies on `uninitialized constant RSpec`.
+  gem "ruby-lsp-rspec", require: false
 end
