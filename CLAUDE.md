@@ -50,8 +50,8 @@ incomplete:
 Run it against the live stack and report the result next to the RSpec one:
 
 ```sh
-docker compose up -d
-cd bruno && npx @usebruno/cli run --env Local
+cd backend && docker compose up -d && bin/rails s   # separate shell
+cd bruno   && npx @usebruno/cli run --env Local
 ```
 
 A collection that lags the code is worse than no collection, because it goes on

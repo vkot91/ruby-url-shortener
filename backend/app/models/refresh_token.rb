@@ -36,7 +36,7 @@ end
 #
 # Table name: refresh_tokens
 #
-#  id           :bigint           not null, primary key
+#  id           :uuid             not null, primary key
 #  expires_at   :datetime         not null
 #  ip_address   :text
 #  revoked_at   :datetime
@@ -44,7 +44,7 @@ end
 #  used_at      :datetime
 #  user_agent   :text
 #  created_at   :datetime         not null
-#  account_id   :bigint           not null
+#  account_id   :uuid             not null
 #  family_id    :uuid             not null
 #
 # Indexes

@@ -46,6 +46,32 @@ jobs:
           working-directory: backend
       - run: bin/brakeman --no-pager
 
+  # backend/Dockerfile is the production image and nothing in this repository
+  # runs it — there is no deploy yet. An unbuilt Dockerfile rots quietly: a base
+  # image moves, a system package is renamed, and the first person to discover it
+  # is whoever is trying to ship under pressure. Building it on every PR turns it
+  # from an aspiration into a checked artifact.
+  #
+  # `push: false` — this proves the image builds, nothing more. There is no
+  # registry, no credentials, and this job needs neither. When a deploy target
+  # exists, pushing belongs in a release workflow gated on main, not here.
+  backend-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # The GitHub Actions cache backend, not a registry: layers survive between
+      # runs, so an unchanged Gemfile.lock does not recompile pg and nokogiri
+      # every time. `mode=max` caches the discarded build stage too, which is
+      # where all the expensive work actually happens.
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   frontend-lint:
     runs-on: ubuntu-latest
     defaults:
@@ -172,7 +198,14 @@ jobs:
         with:
           bundler-cache: true
           working-directory: backend
-      - run: bin/rails db:create db:migrate
+      - run: bin/rails db:create
+      # The dump has to go before migrating. `db:migrate` against a database
+      # with no schema_migrations rows loads db/schema.rb and marks every
+      # version applied, rather than running the migrations — so with the file
+      # present this job re-dumps what it just loaded and the diff below can
+      # never fail. Removing it forces the seven migrations to actually run.
+      - run: rm db/schema.rb
+      - run: bin/rails db:migrate
       - name: Fail if db/schema.rb does not match the migrations
         run: git diff --exit-code db/schema.rb
 
@@ -216,6 +249,7 @@ jobs:
       - backend-security
       - backend-test
       - backend-schema
+      - backend-image
       - frontend-lint
       - frontend-typecheck
       - frontend-test

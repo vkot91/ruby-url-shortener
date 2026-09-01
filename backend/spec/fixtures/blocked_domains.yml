@@ -1,0 +1,40 @@
+# FR-007. Destinations on these domains are refused at creation with
+# `blocked_domain`. Adding a row here does not retroactively ban existing links
+# — that is a separate admin action (BlockedDomain's own note).
+#
+# `domain` is citext, so PHISHY.EXAMPLE collides with the first row. Worth
+# having a fixture whose casing differs from how anyone would type it.
+
+phishy:
+  domain: phishy.example
+  reason: Bulk-reported credential harvesting.
+  created_by: admin
+  created_at: <%= 30.days.ago.to_fs(:db) %>
+
+# No created_by: the column is nullable because a domain can arrive from an
+# automated feed rather than from a person, and a fixture set that only ever
+# shows the populated case hides that.
+malware_feed:
+  domain: malware.example
+  reason: Imported from the upstream blocklist.
+  created_at: <%= 12.days.ago.to_fs(:db) %>
+
+# == Schema Information
+#
+# Table name: blocked_domains
+#
+#  id            :uuid             not null, primary key
+#  domain        :citext           not null
+#  reason        :text
+#  created_at    :datetime         not null
+#  created_by_id :uuid
+#
+# Indexes
+#
+#  index_blocked_domains_on_created_by_id  (created_by_id)
+#  index_blocked_domains_on_domain         (domain) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (created_by_id => accounts.id)
+#

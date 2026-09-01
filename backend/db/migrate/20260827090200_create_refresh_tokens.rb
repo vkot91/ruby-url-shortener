@@ -2,8 +2,8 @@
 
 class CreateRefreshTokens < ActiveRecord::Migration[8.0]
   def change
-    create_table :refresh_tokens do |t|
-      t.references :account, null: false, foreign_key: { on_delete: :cascade }
+    create_table :refresh_tokens, id: :uuid do |t|
+      t.references :account, type: :uuid, null: false, foreign_key: { on_delete: :cascade }
 
       # Opaque random bytes, not a JWT, and only ever stored hashed. Nothing
       # about a refresh token benefits from being self-describing, and an opaque

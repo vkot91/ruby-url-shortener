@@ -98,12 +98,17 @@ RSpec.describe "Registration and sign-in", type: :request do
       it_behaves_like "a token pair"
 
       it "opens a new family rather than extending the last one" do
-        first_family = account.refresh_tokens.first.family_id
+        first_family = account.refresh_tokens.sole.family_id
 
         post "/api/v1/sessions", params: { email: email, password: password }, as: :json
 
-        expect(account.refresh_tokens.pluck(:family_id).uniq.size).to eq(2)
-        expect(account.refresh_tokens.last.family_id).not_to eq(first_family)
+        # Asserted as a set, not as "the last row". Primary keys are UUIDs, so
+        # an unordered relation has no newest element — `.last` would return
+        # whichever row sorts highest, which is unrelated to insertion order.
+        families = account.refresh_tokens.pluck(:family_id).uniq
+
+        expect(families.size).to eq(2)
+        expect(families).to include(first_family)
       end
     end
 

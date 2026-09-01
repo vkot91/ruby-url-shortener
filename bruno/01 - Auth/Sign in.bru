@@ -49,12 +49,12 @@ docs {
   ## The account
 
   `dev@snip.test` / `development password`, from the `email` and `password`
-  variables in the Local environment. It is created by `backend/db/seeds.rb`,
+  variables in the Local environment. It is a row in `backend/spec/fixtures/accounts.yml`,
   which runs automatically when the database is created and can be re-run at
   any time:
 
   ```sh
-  docker compose exec backend bin/rails db:seed
+  cd backend && bin/rails db:fixtures:load
   ```
 
   The credentials are committed on purpose: they are a development fixture, not

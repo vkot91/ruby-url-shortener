@@ -36,6 +36,25 @@ module Backend
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Sidekiq, not the default async adapter. `perform_later` under the async
+    # adapter runs the job in a thread pool inside Puma and drops whatever is
+    # queued when the process restarts — so the Sidekiq process would sit idle
+    # while the work it exists for happened somewhere less durable. There are no
+    # jobs yet; the click-flush job in Phase 3C (T055) is the first, and this is
+    # the sort of default that is discovered by a job silently not running.
+    #
+    # A spec that enqueues will need Sidekiq::Testing to keep the assertion off
+    # a live Redis. Nothing enqueues today, so that arrives with the first job
+    # rather than as unused setup now.
+    config.active_job.queue_adapter = :sidekiq
+
+    # Primary keys are UUIDs, so a generated migration has to default to one:
+    # a table created with a bigint key would be found by the foreign key that
+    # cannot point at it, which is a confusing way to learn about a convention.
+    config.generators do |generate|
+      generate.orm :active_record, primary_key_type: :uuid
+    end
+
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.

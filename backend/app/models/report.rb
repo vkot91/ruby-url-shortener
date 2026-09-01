@@ -17,13 +17,13 @@ end
 #
 # Table name: reports
 #
-#  id             :bigint           not null, primary key
+#  id             :uuid             not null, primary key
 #  reason         :text
 #  reviewed_at    :datetime
 #  status         :text             default("pending"), not null
 #  created_at     :datetime         not null
-#  link_id        :bigint           not null
-#  reviewed_by_id :bigint
+#  link_id        :uuid             not null
+#  reviewed_by_id :uuid
 #
 # Indexes
 #

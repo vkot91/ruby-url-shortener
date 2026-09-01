@@ -13,11 +13,11 @@ end
 #
 # Table name: blocked_domains
 #
-#  id            :bigint           not null, primary key
+#  id            :uuid             not null, primary key
 #  domain        :citext           not null
 #  reason        :text
 #  created_at    :datetime         not null
-#  created_by_id :bigint
+#  created_by_id :uuid
 #
 # Indexes
 #

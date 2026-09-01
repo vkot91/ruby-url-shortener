@@ -1,0 +1,59 @@
+# One report per status the check constraint allows, so the moderation queue has
+# something in every column the admin UI can filter by (FR-030 to FR-033).
+#
+# The queue is ordered oldest-first, so the created_at values are deliberately
+# spread rather than identical.
+
+# The only one the pending queue should return.
+pending_phishing:
+  link: banned
+  reason: Pretends to be a bank sign-in page.
+  status: pending
+  created_at: <%= 6.days.ago.to_fs(:db) %>
+
+# Acted on: this is the report that produced links(:banned).banned_at.
+actioned_phishing:
+  link: banned
+  reason: Credential harvesting.
+  status: actioned
+  reviewed_by: admin
+  reviewed_at: <%= 5.days.ago.to_fs(:db) %>
+  created_at: <%= 6.days.ago.to_fs(:db) %>
+
+# Reviewed and rejected. A dismissed report must leave the link untouched —
+# links(:plain) is unbanned and stays that way.
+dismissed_mistake:
+  link: plain
+  reason: Reporter disagreed with the destination's politics.
+  status: dismissed
+  reviewed_by: admin
+  reviewed_at: <%= 4.days.ago.to_fs(:db) %>
+  created_at: <%= 10.days.ago.to_fs(:db) %>
+
+# == Schema Information
+#
+# Table name: reports
+#
+#  id             :uuid             not null, primary key
+#  reason         :text
+#  reviewed_at    :datetime
+#  status         :text             default("pending"), not null
+#  created_at     :datetime         not null
+#  link_id        :uuid             not null
+#  reviewed_by_id :uuid
+#
+# Indexes
+#
+#  index_reports_on_link_id                (link_id)
+#  index_reports_on_reviewed_by_id         (reviewed_by_id)
+#  index_reports_on_status_and_created_at  (status,created_at)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (link_id => links.id)
+#  fk_rails_...  (reviewed_by_id => accounts.id)
+#
+# Check Constraints
+#
+#  reports_status_check  (status = ANY (ARRAY['pending'::text, 'actioned'::text, 'dismissed'::text]))
+#

@@ -1,0 +1,111 @@
+# One link per state the redirect has to resolve, so `GET /:code` can be walked
+# through all four outcomes by hand without arranging anything first.
+#
+# Codes are 7 characters of [A-Za-z0-9], matching what Links::CodeGenerator
+# produces and what the router's `/:code` constraint accepts. They are readable
+# rather than random only because a human has to type them into curl.
+
+# The ordinary case: 302 to the destination.
+plain:
+  account: dev
+  code: aa1bb2c
+  destination_url: https://example.com/plain
+  clicks_count: 0
+  created_at: <%= 30.days.ago.to_fs(:db) %>
+  updated_at: <%= 30.days.ago.to_fs(:db) %>
+
+# Has clicks.yml rows behind it. `clicks_count` is set to match by hand: the
+# counter is maintained by an atomic UPDATE in the click path, and fixtures run
+# no callbacks, so nothing would otherwise keep the two in step.
+popular:
+  account: dev
+  code: pop9lar
+  destination_url: https://example.com/black-friday
+  name: BF campaign
+  clicks_count: 7
+  created_at: <%= 21.days.ago.to_fs(:db) %>
+  updated_at: <%= 21.days.ago.to_fs(:db) %>
+
+# FR-028. Soft-deleted: the redirect must 404 while clicks_count survives, which
+# is why the count here is deliberately non-zero.
+deleted:
+  account: dev
+  code: gone404
+  destination_url: https://example.com/withdrawn
+  name: Withdrawn promo
+  clicks_count: 12
+  deleted_at: <%= 3.days.ago.to_fs(:db) %>
+  created_at: <%= 40.days.ago.to_fs(:db) %>
+  updated_at: <%= 3.days.ago.to_fs(:db) %>
+
+# FR-018. Banned link on an unbanned account — the warning page, not a redirect.
+banned:
+  account: dev
+  code: bad1234
+  destination_url: https://phishy.example/login
+  clicks_count: 4
+  banned_at: <%= 5.days.ago.to_fs(:db) %>
+  created_at: <%= 45.days.ago.to_fs(:db) %>
+  updated_at: <%= 5.days.ago.to_fs(:db) %>
+
+# FR-002. Owned by the other account. If this ever appears in `dev`'s list, or
+# `dev` can PATCH or DELETE it, isolation is broken.
+rivals:
+  account: rival
+  code: riv4l99
+  destination_url: https://example.com/not-yours
+  name: Rival's campaign
+  clicks_count: 2
+  created_at: <%= 20.days.ago.to_fs(:db) %>
+  updated_at: <%= 20.days.ago.to_fs(:db) %>
+
+# Clean link, banned owner. The warning page comes from the account's state,
+# never from the link's — this row is what tells the two cases apart.
+suspended_owner:
+  account: suspended
+  code: susp3nd
+  destination_url: https://example.com/owner-was-banned
+  clicks_count: 1
+  created_at: <%= 50.days.ago.to_fs(:db) %>
+  updated_at: <%= 50.days.ago.to_fs(:db) %>
+
+# FR-011. Same destination as `plain`, different account, different code and an
+# independent counter. Two people shortening one URL are entitled to both.
+duplicate_destination:
+  account: rival
+  code: dup7lic
+  destination_url: https://example.com/plain
+  clicks_count: 5
+  created_at: <%= 15.days.ago.to_fs(:db) %>
+  updated_at: <%= 15.days.ago.to_fs(:db) %>
+
+# == Schema Information
+#
+# Table name: links
+#
+#  id              :uuid             not null, primary key
+#  banned_at       :datetime
+#  clicks_count    :bigint           default(0), not null
+#  code            :text             not null
+#  deleted_at      :datetime
+#  destination_url :text             not null
+#  name            :text
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  account_id      :uuid             not null
+#
+# Indexes
+#
+#  index_links_on_account_id                        (account_id)
+#  index_links_on_account_id_and_created_at_active  (account_id,created_at DESC) WHERE (deleted_at IS NULL)
+#  index_links_on_code                              (code) UNIQUE
+#  index_links_on_destination_url_trgm              (destination_url) USING gin
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id)
+#
+# Check Constraints
+#
+#  links_code_length_check  (length(code) >= 3 AND length(code) <= 32)
+#

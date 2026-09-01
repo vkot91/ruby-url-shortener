@@ -1,6 +1,7 @@
 # Connection details come from the environment, with no fallbacks: an unset name
-# raises at boot instead of silently connecting somewhere unintended. Compose
-# supplies them; host-side tooling loads .env (see .env.example).
+# raises at boot instead of silently connecting somewhere unintended. In
+# development and test dotenv-rails loads backend/.env before this file is read;
+# in production the platform supplies them. See .env.example.
 default: &default
   adapter: postgresql
   encoding: unicode

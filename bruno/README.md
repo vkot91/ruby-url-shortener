@@ -7,11 +7,13 @@ with the code. Every request in here is a request the backend answers today;
 
 1. Install [Bruno](https://www.usebruno.com/), then **Open Collection** and pick
    this `bruno/` directory.
-2. Bring the stack up from the repository root:
+2. Bring the stack up. Postgres and Redis are containers; the API is not:
 
    ```sh
+   cd backend
    cp .env.example .env    # first time only
-   docker compose up
+   docker compose up -d    # postgres + redis
+   bin/rails s            # port 3001
    ```
 
 3. Select the **Local** environment in the top-right picker.
@@ -23,12 +25,18 @@ with the code. Every request in here is a request the backend answers today;
 ## The account
 
 `dev@snip.test` / `development password`, held in the Local environment as
-`email` and `password` and created by `backend/db/seeds.rb`. The seed runs
-automatically when the database is created; re-run it at any time with:
+`email` and `password`. It is one row in `backend/spec/fixtures/accounts.yml`,
+loaded automatically when the database is created and re-loadable at any time:
 
 ```sh
-docker compose exec backend bin/rails db:seed
+cd backend && bin/rails db:fixtures:load
 ```
+
+That command is not additive — it empties every table the fixtures cover and
+refills it. Which is the point: the collection runs against the same seven links
+and four accounts on every machine. Alongside `dev` there is an `admin` account
+for the `/admin/*` requests, a `rival` account that owns links `dev` must never
+see, and a `suspended` one whose links serve the warning page.
 
 The credentials are committed deliberately. They are a development fixture, not
 a secret, and their value is being identical on every machine and after every
@@ -51,7 +59,7 @@ npx @usebruno/cli run --env Local
 
 `environments/Local.bru` holds the values that do not change between runs: where
 the stack is (`baseUrl`, `shortDomain`, `appUrl`, matching the defaults in
-`.env.example` and `docker-compose.yml`) and the seeded credentials (`email`,
+`backend/.env.example`) and the seeded credentials (`email`,
 `password`).
 
 Everything else is a **runtime variable**, set by a request's post-response
@@ -104,5 +112,5 @@ All windows are one hour (`RateLimiting::WINDOW`), counted in Redis under the
 That last row is a requirement, not an omission (FR-019, Principle I): redirect
 traffic is never throttled, whatever the owning account does on the API.
 
-If you hit a limit while iterating, `docker compose restart redis` clears the
+If you hit a limit while iterating, `cd backend && docker compose restart redis` clears the
 counters.

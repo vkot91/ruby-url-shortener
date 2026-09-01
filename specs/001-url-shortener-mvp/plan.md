@@ -156,7 +156,7 @@ load/
 ├── seed.rb                  # generates the fixed link corpus
 └── results/                 # committed measurements: naive.json, cached.json
 
-docker-compose.yml           # postgres, redis, backend, frontend, sidekiq
+backend/docker-compose.yml   # postgres and redis only — the apps run natively
 ```
 
 **Structure Decision**: Web application with separate `backend/` and `frontend/` trees. The split is
@@ -173,7 +173,7 @@ scoped to demonstrable work; `tasks.md` carries the task-level breakdown and the
 
 ### Phase 1+2 — Setup and Foundation (tasks.md Phases 1 and 2)
 
-Docker Compose (Postgres, Redis, backend, frontend, Sidekiq), Rails and Next.js skeletons, RuboCop
+Docker Compose (Postgres and Redis; the apps run natively), Rails and Next.js skeletons, RuboCop
 and ESLint configured, and CI running both test suites plus both linters as blocking checks. No
 feature behaviour.
 
@@ -182,7 +182,8 @@ the code exists produces a large mechanical diff that buries real review, and ev
 request is reviewed against a standard that is not yet enforced. Configured first and enforced by
 CI from PR 1, style debt never accumulates.
 
-**Exit**: `docker compose up` gives a running stack, green suites, and clean blocking linters.
+**Exit**: `cd backend && docker compose up -d` plus `bin/rails s` and `pnpm dev` give a running
+stack, green suites, and clean blocking linters.
 
 ### Phase 3A — Naive redirect (US1, partial)
 

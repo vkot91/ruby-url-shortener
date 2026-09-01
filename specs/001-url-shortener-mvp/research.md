@@ -309,8 +309,9 @@ the content-addressed store saves meaningful disk and install time on every rebu
 The strict, non-flat `node_modules` also refuses undeclared transitive imports, which is the failure
 this project would otherwise only discover in a production build.
 
-**Applies to**: `frontend/Dockerfile.dev` (`corepack enable`, `pnpm install --frozen-lockfile`),
-the compose `frontend` command, and both frontend CI jobs via `pnpm/action-setup`.
+**Applies to**: the local `pnpm dev` workflow (`corepack enable`, `pnpm install --frozen-lockfile`)
+and both frontend CI jobs via `pnpm/action-setup`. The dev image this originally also covered is
+gone — the frontend runs natively, see quickstart.md.
 
 ---
 
