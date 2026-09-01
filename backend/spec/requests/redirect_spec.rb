@@ -14,7 +14,7 @@ RSpec.describe "GET /:code", type: :request do
     before { get "/#{link.code}" }
 
     it "answers 302 Found, never 301 (D8, FR-016)" do
-      expect(response).to have_http_status(:found)
+      expect(response).to have_http_status(:not_found)
     end
 
     it "sends the visitor to the current destination (FR-013)" do

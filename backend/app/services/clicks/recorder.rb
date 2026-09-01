@@ -14,7 +14,6 @@ module Clicks
   # Redis buffer, and T055's flush job takes over the two statements. Nothing
   # else has to move.
   module Recorder
-    # rubocop:disable Rails/SkipsModelValidations
     # Both statements bypass the model layer on purpose. The click row has no
     # validations worth running and is written a few thousand times a second;
     # the counter must be incremented atomically, since `link.clicks_count += 1`
@@ -27,6 +26,5 @@ module Clicks
       # would lose one of them.
       Link.update_counters(link_id, clicks_count: 1)
     end
-    # rubocop:enable Rails/SkipsModelValidations
   end
 end
