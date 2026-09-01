@@ -37,19 +37,27 @@ RSpec.describe "Foundational controller concerns", type: :request do
   # Routes, not records: the temporary probe routes must be drawn once for the
   # group and torn down after it, and nothing here touches the database, so the
   # usual state-leak objection to before(:all) does not apply.
+  #
+  # Prepended rather than appended. config/routes.rb ends in a catch-all that
+  # answers every unclaimed path with the not-found page (FR-017), so a route
+  # drawn after it is a route nothing can reach — `prepend` puts these ahead of
+  # the real table, which is also where a probe belongs: it must not depend on
+  # the application's own routes to be reachable.
   before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-    Rails.application.routes.disable_clear_and_finalize = true
-    Rails.application.routes.draw do
+    Rails.application.routes.prepend do
       get "probes/open" => "probes#open"
       get "probes/guarded" => "probes#guarded"
       get "probes/guarded_with_record" => "probes#guarded_with_record"
       get "probes/missing" => "probes#missing"
       get "probes/invalid" => "probes#invalid"
     end
+
+    Rails.application.reload_routes!
   end
 
   after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-    Rails.application.routes.disable_clear_and_finalize = false
+    Rails.application.routes.instance_variable_get(:@prepend).clear
+
     Rails.application.reload_routes!
   end
 

@@ -13,6 +13,13 @@ class Account < ApplicationRecord
   has_many :links, dependent: :restrict_with_exception
 
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+
+  # Length only, and a long one — contracts/openapi.yaml sets the minimum at 12.
+  # No composition rules: a 12-character passphrase beats an 8-character one
+  # with a digit bolted on, and rules that forbid the former are why people
+  # write the latter down. `allow_nil` because the digest is what persists, so
+  # every read of an existing row would otherwise have to carry the password.
+  validates :password, length: { minimum: 12 }, allow_nil: true
   validates :role, inclusion: { in: ROLES }
   validates :plan, inclusion: { in: PLANS }
 

@@ -23,7 +23,11 @@ require 'rspec/rails'
 # directory. Alternatively, in the individual `*_spec.rb` files, manually
 # require only the support files necessary.
 #
-# Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
+# Loaded: spec/support holds the DNS-resolution stub every link-creating spec
+# depends on, and the rate-limit store reset below. Both are suite-wide
+# concerns, and requiring them file by file would mean a new spec is wrong by
+# omission rather than right by default.
+Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
 
 # Checks for pending migrations and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove these lines.
@@ -46,6 +50,11 @@ RSpec.configure do |config|
   config.before do
     DatabaseCleaner.strategy = :transaction
   end
+
+  # The rate-limit counters live outside the database, so DatabaseCleaner does
+  # not reach them and a limit tripped in one example would still be tripped in
+  # the next (config/initializers/rate_limit.rb).
+  config.before { RATE_LIMIT_STORE.clear }
 
   config.before(:each, :multithreaded) do
     DatabaseCleaner.strategy = :truncation

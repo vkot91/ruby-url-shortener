@@ -1,0 +1,85 @@
+<%#
+  FR-017, design.md §6.9. Served for an unknown or deleted code.
+
+  The stylesheet is inlined, and it is a copy — banned.html.erb (T084) carries
+  its own. Two copies of forty lines that never change is cheaper to reason
+  about than an asset-pipeline dependency on the anonymous-visitor path, and
+  Principle I makes anything added to that path expensive to justify
+  (design.md §8, P7).
+
+  No webfont is loaded. Figtree and JetBrains Mono are the app's faces; a
+  round trip to fetch one on the path the whole project optimises for buys
+  nothing a visitor will notice.
+
+  Themed by `prefers-color-scheme` rather than by the app's `.dark` class,
+  because there is no JavaScript here to set the class.
+%>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>This link doesn&rsquo;t exist &middot; Snip</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --background: oklch(0.985 0.006 85);
+        --foreground: oklch(0.255 0.018 55);
+        --muted-foreground: oklch(0.505 0.022 62);
+        --primary: oklch(0.555 0.155 42);
+        --destructive: oklch(0.545 0.205 27);
+        --border: oklch(0.895 0.013 78);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --background: oklch(0.175 0.005 58);
+          --foreground: oklch(0.87 0.004 85);
+          --muted-foreground: oklch(0.735 0.007 75);
+          --primary: oklch(0.72 0.145 48);
+          --destructive: oklch(0.665 0.185 25);
+          --border: oklch(0.32 0.006 58);
+        }
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--foreground);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 24px;
+      }
+
+      .container { max-width: 480px; margin: 0 auto; padding: 64px 24px; }
+      .display { font-size: 32px; line-height: 40px; font-weight: 600; margin: 0 0 16px; }
+      .body { margin: 0 0 24px; }
+      .body-sm { font-size: 13px; line-height: 20px; color: var(--muted-foreground); margin: 0; }
+      .rule { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+      .link { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+      .link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1 class="display">This link doesn&rsquo;t exist</h1>
+
+      <p class="body">It may have been deleted, or the address may have a typo.</p>
+
+      <hr class="rule">
+
+      <p class="body">
+        Snip turns long web addresses into short ones that are easy to share, and
+        counts how many people open them.
+      </p>
+
+      <p class="body-sm">
+        <a class="link" href="<%= "#{Rails.application.config.x.app_url}/signup" %>">Create a free account</a>
+      </p>
+    </main>
+  </body>
+</html>

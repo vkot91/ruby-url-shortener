@@ -119,6 +119,8 @@ jobs:
       RAILS_MAX_THREADS: "5"
       REDIS_URL: redis://localhost:6379/0
       SIDEKIQ_REDIS_URL: redis://localhost:6379/1
+      SHORT_DOMAIN: snp.to
+      APP_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
@@ -162,6 +164,8 @@ jobs:
       # service.
       REDIS_URL: redis://localhost:6379/0
       SIDEKIQ_REDIS_URL: redis://localhost:6379/1
+      SHORT_DOMAIN: snp.to
+      APP_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1

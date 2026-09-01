@@ -45,5 +45,29 @@ module Backend
     # (research.md D10), so nothing in this application can set a cookie even by
     # accident — which turns the redirect's "no Set-Cookie" guarantee (FR-015,
     # Principle V) from an assertion into a structural fact.
+
+    # The short domain the codes are served from. Used to render short_url and,
+    # more importantly, to refuse a destination that points back at our own
+    # short-link space (FR-006, "self_referential").
+    config.x.short_domain = ENV.fetch("SHORT_DOMAIN")
+
+    # Where the dashboard lives. The two server-rendered pages on the short
+    # domain are the only place the backend has to link across to it, and a
+    # relative link would point at the short domain, which serves no sign-up
+    # page and never will.
+    config.x.app_url = ENV.fetch("APP_URL")
+
+    # Principle II. The naive Postgres-per-request redirect (T035) and the
+    # cached one (T050) both stay in the tree and both stay runnable, so the
+    # baseline can be re-measured after the optimisation exists rather than
+    # being taken on trust from a commit nobody can run any more.
+    #
+    # This one carries a fallback where the connection settings deliberately do
+    # not: an unset database URL is a misconfiguration, an unset feature flag is
+    # the documented default. False is the default because 3A is where the
+    # build currently is — the cache does not exist yet.
+    config.x.redirect_cache_enabled = ActiveModel::Type::Boolean.new.cast(
+      ENV.fetch("REDIRECT_CACHE_ENABLED", "false")
+    )
   end
 end
