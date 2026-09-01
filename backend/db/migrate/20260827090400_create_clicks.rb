@@ -6,8 +6,8 @@ class CreateClicks < ActiveRecord::Migration[8.0]
     # row has, and it is the redirect's clock, not the insert's: rows arrive up
     # to 30 seconds late in batches (SC-009), so a created_at would record when
     # the flush job ran and quietly invite someone to report clicks by it.
-    create_table :clicks do |t| # rubocop:disable Rails/CreateTableWithTimestamps
-      t.references :link, null: false, foreign_key: true, index: false
+    create_table :clicks, id: :uuid do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.references :link, type: :uuid, null: false, foreign_key: true, index: false
 
       # Captured in the middleware when the redirect is served, not when the
       # batch reaches Postgres — the two are up to 30 seconds apart (SC-009).

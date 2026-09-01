@@ -27,8 +27,13 @@
 threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
 threads threads_count, threads_count
 
-# Specifies the `port` that Puma will listen on to receive requests; default is 3000.
-port ENV.fetch("PORT", 3000)
+# Specifies the `port` that Puma will listen on to receive requests.
+#
+# 3001, not Rails' default of 3000, because 3000 belongs to the Next.js dev
+# server — the two run side by side in development (quickstart.md). This is the
+# one place the port is decided: relying on a `-p 3001` flag in the docs means
+# the collision comes back the first time somebody types plain `bin/rails s`.
+port ENV.fetch("PORT", 3001)
 
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart

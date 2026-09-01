@@ -175,7 +175,7 @@ paths:
 
   /links/{id}:
     parameters:
-      - { name: id, in: path, required: true, schema: { type: integer } }
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
     get:
       tags: [links]
       summary: Fetch one link
@@ -241,7 +241,7 @@ paths:
       tags: [admin]
       summary: Ban a link (FR-031)
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200': { description: Cache invalidated; next visitor sees the warning page }
         '403': { description: Not an administrator }
@@ -251,7 +251,7 @@ paths:
       tags: [admin]
       summary: Ban an account and all its links (FR-031)
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '200': { description: Every cached link of the account is invalidated }
         '403': { description: Not an administrator }
@@ -349,7 +349,7 @@ components:
     Link:
       type: object
       properties:
-        id: { type: integer }
+        id: { type: string, format: uuid }
         code: { type: string, description: immutable (FR-026) }
         short_url: { type: string, format: uri }
         destination_url: { type: string, format: uri }
@@ -364,7 +364,7 @@ components:
         - $ref: '#/components/schemas/Link'
         - type: object
           properties:
-            account_id: { type: integer }
+            account_id: { type: string, format: uuid }
             banned_at: { type: string, format: date-time, nullable: true }
             deleted_at: { type: string, format: date-time, nullable: true }
 

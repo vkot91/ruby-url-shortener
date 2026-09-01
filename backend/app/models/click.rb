@@ -13,9 +13,9 @@ end
 #
 # Table name: clicks
 #
-#  id          :bigint           not null, primary key
+#  id          :uuid             not null, primary key
 #  occurred_at :datetime         not null
-#  link_id     :bigint           not null
+#  link_id     :uuid             not null
 #
 # Indexes
 #

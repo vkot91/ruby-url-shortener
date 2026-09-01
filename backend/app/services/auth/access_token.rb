@@ -47,7 +47,12 @@ module Auth
           required_claims: %w[sub role exp jti]
         )
 
-        Claims.new(account_id: Integer(payload["sub"]), role: payload["role"], jti: payload["jti"])
+        # `sub` is the account's UUID, carried as the string it already is. It
+        # is deliberately not cast or validated here: a malformed value finds no
+        # account, and the lookup is the check. Coercing it would only move the
+        # same rejection earlier and give a caller a second failure mode to
+        # handle.
+        Claims.new(account_id: payload["sub"], role: payload["role"], jti: payload["jti"])
       rescue JWT::ExpiredSignature
         raise Expired
       rescue JWT::DecodeError, ArgumentError, TypeError

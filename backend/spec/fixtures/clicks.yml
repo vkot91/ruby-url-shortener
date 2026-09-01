@@ -1,0 +1,56 @@
+# The seven rows behind links(:popular).clicks_count.
+#
+# Spread across days rather than stamped identically, so the (link_id,
+# occurred_at DESC) index is exercised by anything that orders or windows them,
+# and so a "clicks in the last 7 days" query has both sides of the boundary to
+# work with.
+#
+# The table has no created_at/updated_at — a click is an immutable event with
+# one timestamp — so nothing is auto-filled here.
+
+popular_1:
+  link: popular
+  occurred_at: <%= 20.days.ago.to_fs(:db) %>
+
+popular_2:
+  link: popular
+  occurred_at: <%= 14.days.ago.to_fs(:db) %>
+
+popular_3:
+  link: popular
+  occurred_at: <%= 8.days.ago.to_fs(:db) %>
+
+# Just outside a 7-day window, on purpose.
+popular_4:
+  link: popular
+  occurred_at: <%= (7.days + 1.hour).ago.to_fs(:db) %>
+
+# Just inside it.
+popular_5:
+  link: popular
+  occurred_at: <%= (7.days - 1.hour).ago.to_fs(:db) %>
+
+popular_6:
+  link: popular
+  occurred_at: <%= 2.days.ago.to_fs(:db) %>
+
+popular_7:
+  link: popular
+  occurred_at: <%= 3.hours.ago.to_fs(:db) %>
+
+# == Schema Information
+#
+# Table name: clicks
+#
+#  id          :uuid             not null, primary key
+#  occurred_at :datetime         not null
+#  link_id     :uuid             not null
+#
+# Indexes
+#
+#  index_clicks_on_link_id_and_occurred_at  (link_id,occurred_at DESC)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (link_id => links.id)
+#

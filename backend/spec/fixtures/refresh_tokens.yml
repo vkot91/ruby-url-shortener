@@ -1,0 +1,91 @@
+# The rotation states of one token family, plus a live token for a second.
+#
+# Only the SHA-256 digest is stored — the raw token exists in the client's hands
+# and nowhere else (RefreshToken's note) — so the raw values are written here as
+# the labels they hash from, and they are usable by hand:
+#
+#   curl -sX POST localhost:3001/api/v1/auth/refresh \
+#     -H 'Content-Type: application/json' \
+#     -d '{"refresh_token":"dev-refresh-live"}'
+#
+# family_id is a fixed UUID per family rather than a generated one, because
+# reuse detection revokes *the family*, and asserting that means naming it.
+<% family = "6d3b1f9a-0c5e-4a71-9f2b-8e1d4c7a5b30" %>
+<% rotated_family = "b17c0e42-9a3d-4f18-8c6e-2d5b7f0a9134" %>
+
+# The one that works. Unused, unrevoked, 30 days out (RefreshToken::LIFETIME).
+dev_live:
+  account: dev
+  token_digest: <%= RefreshToken.digest("dev-refresh-live") %>
+  family_id: <%= family %>
+  expires_at: <%= 30.days.from_now.to_fs(:db) %>
+  user_agent: Bruno
+  ip_address: 127.0.0.1
+  created_at: <%= Time.current.to_fs(:db) %>
+
+# Already exchanged. Presenting it again is the replay that must take the whole
+# family down, not just this row — which is why it shares `family` above.
+dev_rotated:
+  account: dev
+  token_digest: <%= RefreshToken.digest("dev-refresh-rotated") %>
+  family_id: <%= family %>
+  used_at: <%= 1.hour.ago.to_fs(:db) %>
+  expires_at: <%= 29.days.from_now.to_fs(:db) %>
+  user_agent: Bruno
+  ip_address: 127.0.0.1
+  created_at: <%= 2.hours.ago.to_fs(:db) %>
+
+# Past its expiry. Refusal here is a plain 401, not reuse detection: an expired
+# token is a client that waited too long, not an attacker replaying one.
+dev_expired:
+  account: dev
+  token_digest: <%= RefreshToken.digest("dev-refresh-expired") %>
+  family_id: <%= rotated_family %>
+  expires_at: <%= 1.day.ago.to_fs(:db) %>
+  user_agent: Bruno
+  ip_address: 127.0.0.1
+  created_at: <%= 31.days.ago.to_fs(:db) %>
+
+# Revoked without having been used — what a sign-out, or a ban, leaves behind.
+dev_revoked:
+  account: dev
+  token_digest: <%= RefreshToken.digest("dev-refresh-revoked") %>
+  family_id: <%= rotated_family %>
+  revoked_at: <%= 2.days.ago.to_fs(:db) %>
+  expires_at: <%= 28.days.from_now.to_fs(:db) %>
+  created_at: <%= 5.days.ago.to_fs(:db) %>
+
+# A second account holding a live session, so "revoke this account's family"
+# has something adjacent it must leave alone.
+rival_live:
+  account: rival
+  token_digest: <%= RefreshToken.digest("rival-refresh-live") %>
+  family_id: 2f8e5a13-7b4c-4d60-a9e3-1c0f6b8d2745
+  expires_at: <%= 30.days.from_now.to_fs(:db) %>
+  created_at: <%= Time.current.to_fs(:db) %>
+
+# == Schema Information
+#
+# Table name: refresh_tokens
+#
+#  id           :uuid             not null, primary key
+#  expires_at   :datetime         not null
+#  ip_address   :text
+#  revoked_at   :datetime
+#  token_digest :text             not null
+#  used_at      :datetime
+#  user_agent   :text
+#  created_at   :datetime         not null
+#  account_id   :uuid             not null
+#  family_id    :uuid             not null
+#
+# Indexes
+#
+#  index_refresh_tokens_on_account_id    (account_id)
+#  index_refresh_tokens_on_family_id     (family_id)
+#  index_refresh_tokens_on_token_digest  (token_digest) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id) ON DELETE => cascade
+#

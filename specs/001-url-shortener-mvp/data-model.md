@@ -13,7 +13,7 @@ the second half.
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
-| `id` | bigint | PK | |
+| `id` | uuid | PK | |
 | `email` | citext | NOT NULL, UNIQUE | case-insensitive uniqueness by column type, not by lowercasing in Ruby |
 | `password_digest` | text | NOT NULL | bcrypt via `has_secure_password` |
 | `role` | text | NOT NULL, DEFAULT `'creator'`, CHECK IN (`creator`, `admin`) | FR-003 |
@@ -38,8 +38,8 @@ the second half.
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
-| `id` | bigint | PK | |
-| `account_id` | bigint | NOT NULL, FK → accounts, ON DELETE CASCADE | |
+| `id` | uuid | PK | |
+| `account_id` | uuid | NOT NULL, FK → accounts, ON DELETE CASCADE | |
 | `token_digest` | text | NOT NULL, UNIQUE | SHA-256; the raw token exists only in the client's hands |
 | `family_id` | uuid | NOT NULL | one sign-in opens one family; rotation stays inside it |
 | `used_at` | timestamptz | NULL | set when exchanged; a token presented with this set is a replay |
@@ -72,8 +72,8 @@ narrow.
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
-| `id` | bigint | PK | |
-| `account_id` | bigint | NOT NULL, FK → accounts | owner; FR-002 |
+| `id` | uuid | PK | |
+| `account_id` | uuid | NOT NULL, FK → accounts | owner; FR-002 |
 | `code` | text | NOT NULL, UNIQUE, CHECK length between 3 and 32 | immutable after creation (FR-026) |
 | `destination_url` | text | NOT NULL | stored normalised (FR-008) |
 | `name` | text | NULL | creator-facing label only |
@@ -116,8 +116,8 @@ is how FR-029's 30-day quarantine is satisfied without a quarantine mechanism (D
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
-| `id` | bigint | PK | |
-| `link_id` | bigint | NOT NULL, FK → links | |
+| `id` | uuid | PK | |
+| `link_id` | uuid | NOT NULL, FK → links | |
 | `occurred_at` | timestamptz | NOT NULL | captured in the middleware, not at insert time |
 
 **Indexes**: `(link_id, occurred_at DESC)`.
@@ -144,10 +144,10 @@ exists so its absence cannot become an unbounded-growth problem.
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
-| `id` | bigint | PK | |
+| `id` | uuid | PK | |
 | `domain` | citext | NOT NULL, UNIQUE | registrable domain; matching also covers subdomains |
 | `reason` | text | NULL | |
-| `created_by_id` | bigint | FK → accounts | which admin added it |
+| `created_by_id` | uuid | FK → accounts | which admin added it |
 | `created_at` | timestamptz | NOT NULL | |
 
 Checked at creation and at destination edit (FR-007). Existing links are not retroactively banned by
@@ -159,11 +159,11 @@ an addition here — that is a separate deliberate admin action.
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
-| `id` | bigint | PK | |
-| `link_id` | bigint | NOT NULL, FK → links | |
+| `id` | uuid | PK | |
+| `link_id` | uuid | NOT NULL, FK → links | |
 | `reason` | text | NULL | free text from the warning page |
 | `status` | text | NOT NULL, DEFAULT `'pending'`, CHECK IN (`pending`, `actioned`, `dismissed`) | |
-| `reviewed_by_id` | bigint | NULL, FK → accounts | |
+| `reviewed_by_id` | uuid | NULL, FK → accounts | |
 | `reviewed_at` | timestamptz | NULL | |
 | `created_at` | timestamptz | NOT NULL | |
 

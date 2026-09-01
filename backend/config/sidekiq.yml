@@ -1,5 +1,5 @@
 # The click-flush schedule is added in Phase 3C (T056); this file exists now so
-# the composed sidekiq service starts on a Phase 1 checkout.
+# `bundle exec sidekiq -C config/sidekiq.yml` starts on a Phase 1 checkout.
 :concurrency: 5
 :queues:
   - default

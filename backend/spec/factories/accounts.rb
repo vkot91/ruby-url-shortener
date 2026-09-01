@@ -19,7 +19,7 @@ end
 #
 # Table name: accounts
 #
-#  id              :bigint           not null, primary key
+#  id              :uuid             not null, primary key
 #  banned_at       :datetime
 #  email           :citext           not null
 #  password_digest :text             not null

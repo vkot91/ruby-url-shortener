@@ -1,0 +1,69 @@
+# Four accounts, one per authorisation state the application distinguishes.
+#
+# Fixtures are inserted with raw SQL — no validations, no callbacks, no
+# `has_secure_password`. The digest therefore has to be computed here rather
+# than assigned as a password, and it is computed once and shared: bcrypt is
+# deliberately slow, and paying for it per row would make loading this file the
+# slowest thing in the suite.
+<% digest = BCrypt::Password.create("development password") %>
+
+# The account the Bruno collection signs in as (bruno/01 - Auth/Sign in).
+# Its address and password are committed on purpose — a development fixture, not
+# a secret, whose entire value is being identical on every machine.
+dev:
+  email: dev@snip.test
+  password_digest: "<%= digest %>"
+  role: creator
+  created_at: <%= 90.days.ago.to_fs(:db) %>
+  updated_at: <%= 90.days.ago.to_fs(:db) %>
+
+# FR-003. Reaches /api/v1/admin/*; `dev` must not.
+admin:
+  email: admin@snip.test
+  password_digest: "<%= digest %>"
+  role: admin
+  created_at: <%= 90.days.ago.to_fs(:db) %>
+  updated_at: <%= 90.days.ago.to_fs(:db) %>
+
+# FR-002. Exists to be the *other* account: whatever `dev` lists, edits, or
+# deletes must never touch anything owned by this one.
+rival:
+  email: rival@snip.test
+  password_digest: "<%= digest %>"
+  role: creator
+  created_at: <%= 60.days.ago.to_fs(:db) %>
+  updated_at: <%= 60.days.ago.to_fs(:db) %>
+
+# FR-018's second half. A ban on the account, not on the link — every link this
+# account owns must serve the warning page even though none of them is banned
+# itself (the resolution order in data-model.md).
+suspended:
+  email: suspended@snip.test
+  password_digest: "<%= digest %>"
+  role: creator
+  banned_at: <%= 7.days.ago.to_fs(:db) %>
+  created_at: <%= 60.days.ago.to_fs(:db) %>
+  updated_at: <%= 7.days.ago.to_fs(:db) %>
+
+# == Schema Information
+#
+# Table name: accounts
+#
+#  id              :uuid             not null, primary key
+#  banned_at       :datetime
+#  email           :citext           not null
+#  password_digest :text             not null
+#  plan            :text             default("free"), not null
+#  role            :text             default("creator"), not null
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#
+# Indexes
+#
+#  index_accounts_on_email  (email) UNIQUE
+#
+# Check Constraints
+#
+#  accounts_plan_check  (plan = 'free'::text)
+#  accounts_role_check  (role = ANY (ARRAY['creator'::text, 'admin'::text]))
+#

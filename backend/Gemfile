@@ -54,6 +54,14 @@ group :development do
 end
 
 group :development, :test do
+  # Loads backend/.env before Rails reads a single ENV.fetch. Nothing in this
+  # app carries a fallback — an unset name raises at boot on purpose — so
+  # running the server, a spec, or a console natively would otherwise mean
+  # sourcing the file by hand every time. Development and test only: in
+  # production the environment comes from the platform, and a .env file there
+  # would be a second, quieter source of truth.
+  gem "dotenv-rails"
+
   gem "rspec-rails", "~> 7.1"
   gem "factory_bot_rails", "~> 6.4"
   gem "database_cleaner-active_record", "~> 2.2"

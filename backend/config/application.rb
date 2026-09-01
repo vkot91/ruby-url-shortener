@@ -36,6 +36,13 @@ module Backend
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Primary keys are UUIDs, so a generated migration has to default to one:
+    # a table created with a bigint key would be found by the foreign key that
+    # cannot point at it, which is a confusing way to learn about a convention.
+    config.generators do |generate|
+      generate.orm :active_record, primary_key_type: :uuid
+    end
+
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.

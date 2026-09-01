@@ -2,8 +2,8 @@
 
 class CreateLinks < ActiveRecord::Migration[8.0]
   def change
-    create_table :links do |t|
-      t.references :account, null: false, foreign_key: true
+    create_table :links, id: :uuid do |t|
+      t.references :account, type: :uuid, null: false, foreign_key: true
 
       t.text :code, null: false
       t.text :destination_url, null: false

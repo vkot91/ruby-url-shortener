@@ -9,6 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL, trace: "on-first-retry" },
-  // Reuses an already-running stack locally; CI starts it via docker compose,
-  // so no webServer block here — the app under test is the composed backend too.
+  // Reuses an already-running stack: `pnpm dev` locally, the CI job's own start
+  // step on CI. No webServer block, so the app under test is never a second,
+  // differently-configured instance this file spawned.
 });

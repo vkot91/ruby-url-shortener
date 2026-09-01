@@ -33,7 +33,7 @@ end
 #
 # Table name: links
 #
-#  id              :bigint           not null, primary key
+#  id              :uuid             not null, primary key
 #  banned_at       :datetime
 #  clicks_count    :bigint           default(0), not null
 #  code            :text             not null
@@ -42,7 +42,7 @@ end
 #  name            :text
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
-#  account_id      :bigint           not null
+#  account_id      :uuid             not null
 #
 # Indexes
 #

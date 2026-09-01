@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the committed template, which is the only record of which names a
+# fresh clone has to set.
+!.env.example
 
 # vercel
 .vercel

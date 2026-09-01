@@ -1,0 +1,51 @@
+# Backing services only. The Rails server, Sidekiq, and the Next.js dev server
+# all run natively on the host — see quickstart.md.
+#
+# Postgres and Redis are containerised because they are stateful things nobody
+# wants to install and version per machine. The application is not, because
+# containerising it buys nothing here and costs a rebuild on every gem change,
+# an extra hop for the debugger, and a bind-mount whose Gemfile.lock drifts from
+# the gems baked into the image. CI already runs the suite natively against
+# service containers (.github/workflows/ci.yml); this makes local development
+# match it rather than diverge from it.
+#
+# The project name is pinned so the volume keeps its identity — compose derives
+# it from the directory otherwise, and moving this file would have orphaned the
+# existing database.
+name: shortener
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Non-default host ports: 5432 and 6379 are commonly already taken by a
+    # system-wide install, and the whole point of this file is that it does not
+    # fight whatever else the machine is running.
+    ports: ["${POSTGRES_PORT}:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7.4
+    # A bounded cache that evicts rather than OOMs. The click buffer lives in
+    # db1 alongside Sidekiq, which allkeys-lru would also evict — accepted for
+    # the reference environment, where 512mb is far above the working set.
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+    ports: ["${REDIS_HOST_PORT}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
