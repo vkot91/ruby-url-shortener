@@ -1,0 +1,34 @@
+#!/bin/sh
+# Pre-commit gate: RuboCop must pass over the whole backend.
+#
+# Enable in a fresh clone with:
+#     git config core.hooksPath hooks
+#
+# Bypass for a single commit with `git commit --no-verify`, or by exporting
+# SKIP_RUBOCOP=1. CI runs the same `bundle exec rubocop` as `backend-lint`, so
+# a bypass here defers the failure rather than removing it.
+#
+# The whole backend is inspected, not just the staged files: an offense that
+# already sits in the tree fails CI on this commit regardless of who wrote it,
+# so the gate has to see it before the commit exists.
+
+set -e
+
+if [ -n "$SKIP_RUBOCOP" ]; then
+  exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+
+cd "$repo_root/backend"
+
+echo "RuboCop: checking backend..."
+
+if bundle exec rubocop; then
+  exit 0
+fi
+
+echo ""
+echo "Commit blocked: RuboCop found offenses in backend/."
+echo "Fix them, or run 'bundle exec rubocop -a' in backend/ for the autocorrectable ones."
+exit 1

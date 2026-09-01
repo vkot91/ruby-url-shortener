@@ -18,6 +18,7 @@ module Clicks
     # validations worth running and is written a few thousand times a second;
     # the counter must be incremented atomically, since `link.clicks_count += 1`
     # loses one of two concurrent redirects.
+    # rubocop:disable Rails/SkipsModelValidations
     def self.call(link_id:, occurred_at: Time.current)
       Click.insert!({ link_id: link_id, occurred_at: occurred_at })
 
@@ -26,5 +27,6 @@ module Clicks
       # would lose one of them.
       Link.update_counters(link_id, clicks_count: 1)
     end
+    # rubocop:enable Rails/SkipsModelValidations
   end
 end

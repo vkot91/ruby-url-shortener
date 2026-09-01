@@ -56,3 +56,26 @@ cd bruno && npx @usebruno/cli run --env Local
 
 A collection that lags the code is worse than no collection, because it goes on
 passing while silently covering nothing new.
+
+## RuboCop runs before every commit
+
+`hooks/pre-commit` runs `bundle exec rubocop` over the whole of `backend/` and
+refuses the commit on any offense — the same check CI runs as `backend-lint`.
+
+It inspects the whole tree rather than only the staged files on purpose: an
+offense that is already committed fails CI on the next push whoever wrote it,
+so the gate has to see it too.
+
+A fresh clone has to point Git at the directory once:
+
+```sh
+git config core.hooksPath hooks
+```
+
+Claude Code runs the same script as a `PreToolUse` hook on `git commit`
+(`.claude/settings.json`), so a lint failure surfaces before the commit is even
+attempted rather than as a rejected command.
+
+`git commit --no-verify` (or `SKIP_RUBOCOP=1`) bypasses the Git hook. That only
+moves the failure to CI, so bypass to stage a work-in-progress commit, never to
+land one.
