@@ -9,7 +9,12 @@
 # Ruby / Rails
 /backend/.bundle/
 /backend/vendor/bundle/
+# The .keep files are tracked, not incidental. Rails' production image chowns
+# log/, tmp/, and storage/ to the runtime user, and a directory that exists only
+# on a developer's disk is absent from a fresh checkout — which is how the image
+# builds locally and fails in CI.
 /backend/log/*
+!/backend/log/.keep
 /backend/tmp/*
 !/backend/tmp/.keep
 /backend/storage/*
