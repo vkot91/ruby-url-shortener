@@ -1,0 +1,34 @@
+meta {
+  name: Bare root
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+tests {
+  test("answers the explanatory page rather than nothing", function () {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.body).to.contain("Snip turns long web addresses");
+  });
+}
+
+docs {
+  Somebody typing the short domain with no code after it. There is nothing to
+  redirect them to, so they get the page that explains what the service is and
+  links across to sign-up.
+
+  The headline still reads "This link doesn't exist", which is not quite what
+  happened here — an open question rather than a settled one. The alternative
+  is redirecting the root across to the dashboard, which is a product decision
+  nothing in the spec has made yet.
+}

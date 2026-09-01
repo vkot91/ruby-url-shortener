@@ -1,0 +1,32 @@
+meta {
+  name: Reserved path is not a code
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/up
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+tests {
+  test("leaves /up to the health check rather than treating it as a code", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  FR-012 from the other side. The catch-all code route is drawn last, so every
+  segment the routing table claims wins the match. The same segments are
+  enumerated in config/initializers/reserved_paths.rb and refused at creation —
+  a code the router would swallow is a code that never redirects.
+
+  The reserved list today: admin, api, assets, favicon, login, logout, packs,
+  robots, settings, signup, sitemap, static, up.
+}

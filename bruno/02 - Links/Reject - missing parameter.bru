@@ -1,0 +1,35 @@
+meta {
+  name: Reject - missing parameter
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/links
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "No destination given"
+  }
+}
+
+tests {
+  test("names the parameter that was missing", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.body.error.code).to.equal("parameter_missing");
+    expect(res.body.error.message).to.contain("destination_url");
+  });
+}
+
+docs {
+  A malformed request rather than a rejected destination, so it carries its own
+  code. Handled centrally in the ErrorHandling concern, which means every
+  endpoint reports a missing parameter the same way.
+}

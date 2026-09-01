@@ -1,0 +1,26 @@
+meta {
+  name: Health check
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/up
+  body: none
+  auth: none
+}
+
+tests {
+  test("the app booted", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Rails' own health endpoint. Run this first: every other failure in this
+  collection is easier to read once you know the stack is up.
+
+  `/up` is also a reserved path (config/initializers/reserved_paths.rb), so it
+  is the one case where a three-character path is *not* treated as a short code
+  — see `03 - Redirect / Reserved path is not a code`.
+}

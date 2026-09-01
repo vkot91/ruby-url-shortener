@@ -1,0 +1,38 @@
+meta {
+  name: Reject - unsupported scheme
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/links
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "destination_url": "data:text/html,<script>alert(1)</script>"
+  }
+}
+
+tests {
+  test("refused as unsupported_scheme, not as invalid_url", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.body.error.code).to.equal("unsupported_scheme");
+  });
+}
+
+docs {
+  Only http and https are shortenable. `data:` is the interesting case: it is
+  how a payload gets smuggled through a redirector, and it is also a URL that
+  `URI.parse` raises on — so the scheme is read off the raw string before
+  parsing, or this would come back as `invalid_url`.
+
+  Also worth trying here: `ftp://example.com/x`, `file://localhost/etc/passwd`,
+  `javascript:alert(1)`.
+}

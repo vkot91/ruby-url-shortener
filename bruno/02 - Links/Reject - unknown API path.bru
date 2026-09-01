@@ -1,0 +1,32 @@
+meta {
+  name: Reject - unknown API path
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/v1/nonexistent
+  body: none
+  auth: none
+}
+
+tests {
+  test("answers JSON, not the HTML page the short domain serves", function () {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.body.error.code).to.equal("not_found");
+  });
+
+  test("does not demand a token before admitting the path does not exist", function () {
+    expect(res.body.error.code).to.not.equal("unauthenticated");
+  });
+}
+
+docs {
+  The other half of the catch-all. Everything under `/api` that no route claims
+  answers in the standard error envelope, because a client that parses JSON can
+  do nothing with a page about short links.
+
+  Deliberately unauthenticated: demanding a token before admitting a path does
+  not exist reports a typo as `unauthenticated`, which sends whoever made it
+  looking at their credentials instead of at their URL.
+}

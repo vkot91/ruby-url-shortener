@@ -1,0 +1,75 @@
+meta {
+  name: Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/registrations
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{newAccountEmail}}",
+    "password": "{{newAccountPassword}}"
+  }
+}
+
+script:pre-request {
+  // A fresh address every run, so the collection can be re-run end to end
+  // without tripping the unique index on `email`. This is the account
+  // registration is *tested* with; the account the collection signs in as is
+  // the seeded one in the Local environment, and the two are deliberately not
+  // the same thing.
+  bru.setVar("newAccountEmail", `bruno-${Date.now()}@example.com`);
+
+  // Account#password is `length: { minimum: 12 }`.
+  bru.setVar("newAccountPassword", "correct horse battery staple");
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("accessToken", res.body.access_token);
+    bru.setVar("refreshToken", res.body.refresh_token);
+  }
+}
+
+tests {
+  test("creates the account and signs it in in one round trip", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("returns a full token pair", function () {
+    expect(res.body.access_token).to.be.a("string").and.not.be.empty;
+    expect(res.body.refresh_token).to.be.a("string").and.not.be.empty;
+    expect(res.body.expires_in).to.equal(900);
+  });
+
+  test("sets no cookie — the API is bearer-token only (FR-015)", function () {
+    expect(res.getHeader("set-cookie")).to.be.undefined;
+  });
+}
+
+docs {
+  FR-001. Registration opens the account's first refresh-token family, so a new
+  account is signed in without a second round trip.
+
+  This request tests registration; it is not how the collection signs in. The
+  address is generated fresh on every run, so re-running the collection never
+  trips the unique index on `email` — and so the account it makes is not one
+  anything else can be written against. Use `Sign in` for that: it uses the
+  seeded `dev@snip.test`, which is the same on every machine.
+
+  It does leave a usable token pair behind, so running only this request is
+  enough to reach `02 - Links`.
+
+  Rate limited to 10 per hour per origin (FR-036). If you get a `rate_limited`
+  429 while iterating, restart Redis or wait out the window — the limiter store
+  is `config/initializers/rate_limit.rb`, namespace `ratelimit`.
+}

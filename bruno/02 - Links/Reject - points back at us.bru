@@ -1,0 +1,37 @@
+meta {
+  name: Reject - points back at us
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/links
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "destination_url": "https://{{shortDomain}}/abc1234"
+  }
+}
+
+tests {
+  test("refused as self_referential", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.body.error.code).to.equal("self_referential");
+  });
+}
+
+docs {
+  A short link pointing at the short domain is a redirect loop waiting to
+  happen. Subdomains are refused too, and the comparison is case-insensitive
+  — try `https://GO.{{shortDomain}}/abc1234`.
+
+  A host that merely *ends* with the same letters is fine: `https://notsnp.to/x`
+  is accepted.
+}

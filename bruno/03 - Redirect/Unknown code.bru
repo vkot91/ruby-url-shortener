@@ -1,0 +1,44 @@
+meta {
+  name: Unknown code
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/notacode
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+tests {
+  test("answers 404 (FR-017)", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("explains what the service is rather than showing an error string", function () {
+    expect(res.body).to.contain("Snip turns long web addresses");
+  });
+
+  test("sets no cookie and forbids caching", function () {
+    expect(res.getHeader("set-cookie")).to.be.undefined;
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+  });
+}
+
+docs {
+  FR-017 asks for a page that explains the service, not a bare error: for an
+  anonymous visitor this is the most common first contact with the product
+  (design.md 6.9).
+
+  It is server-rendered HTML from an API-only Rails app, with the design tokens
+  inlined and no webfont — the page has to render before anything else loads.
+
+  A deleted link answers this same page rather than redirecting (FR-028): the
+  row and the code survive so the statistics survive and the code is never
+  handed to anyone else (FR-029, D12).
+}

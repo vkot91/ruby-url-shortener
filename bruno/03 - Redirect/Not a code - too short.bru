@@ -1,0 +1,47 @@
+meta {
+  name: Not a code - too short
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/ab
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+tests {
+  test("never reaches a code lookup", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("still gets the page that explains the service", function () {
+    expect(res.body).to.contain("Snip turns long web addresses");
+  });
+
+  test("sets no cookie and forbids caching", function () {
+    expect(res.getHeader("set-cookie")).to.be.undefined;
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+  });
+}
+
+docs {
+  The route constrains codes to `[A-Za-z0-9]{3,32}`, so a two-character path —
+  or one with a hyphen in it, like `/not-a-code` — never reaches a lookup and
+  costs no database work.
+
+  It still gets the branded page. A truncated short link and a mistyped one are
+  the same situation to the person who typed it, so a catch-all at the foot of
+  config/routes.rb sends every unclaimed path to the same action `show` uses
+  for an unknown code. Without it Rails answers with its own 404, which on an
+  application carrying no `public/404.html` is an empty body.
+
+  In development you would previously have seen Rails' routing-error debug page
+  here — `consider_all_requests_local` is true, so a genuine routing *failure*
+  renders the trace. The catch-all means there is no failure to render.
+}

@@ -1,0 +1,67 @@
+meta {
+  name: Follow a short code
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/{{linkCode}}
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+tests {
+  test("answers 302 Found, never 301 (D8, FR-016)", function () {
+    // A 301 is cached by the browser forever, which would break destination
+    // editing for exactly the visitors who clicked before the edit.
+    expect(res.getStatus()).to.equal(302);
+  });
+
+  test("sends the visitor to the current destination", function () {
+    expect(res.getHeader("location")).to.equal("https://example.com/Hello?utm_source=poster");
+  });
+
+  test("forbids caching the mapping", function () {
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+  });
+
+  test("sets no cookie — the visitor is not the product (FR-015, Principle V)", function () {
+    expect(res.getHeader("set-cookie")).to.be.undefined;
+  });
+
+  test("sends an empty body — the visitor is not meant to stop here", function () {
+    expect(res.body).to.be.empty;
+  });
+}
+
+docs {
+  The public redirect surface, and the path Principle I calls sacred. It reads
+  no credential of any kind, sets no cookie, and answers before anything else in
+  the routing table can claim the segment.
+
+  ## Turn off redirect following
+
+  Bruno follows redirects by default, which would send this request on to
+  example.com and hide everything worth asserting. This request carries
+  `followRedirects: false` in its Settings tab; if your Bruno version predates
+  that setting, turn "Follow redirects" off in the request's Settings tab by
+  hand.
+
+  ## What this costs today
+
+  Two synchronous Postgres writes per redirect — the click row and the counter —
+  which is a Principle I violation and is the point. Principle II requires the
+  baseline to be measured before it is optimised, and a baseline that already
+  avoids the bottleneck measures nothing. The waiver is recorded in plan.md,
+  scoped to T035-T044, and expires at T045.
+
+  Run this a few times, then re-create the link listing in a later phase to see
+  `clicks_count` follow.
+
+  Requires `linkCode`, set by `02 - Links / Create link`.
+}
