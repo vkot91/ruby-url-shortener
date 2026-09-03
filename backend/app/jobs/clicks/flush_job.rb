@@ -86,23 +86,42 @@ module Clicks
       { link_id: link_id, occurred_at: Time.zone.at(milliseconds.to_i / 1000.0) }
     end
 
-    # One statement for the whole batch, not one per link. `UPDATE ... FROM
-    # (VALUES ...)` is the grouped increment D4 asks for: it reads as an atomic
-    # `+ n` per row, so it neither loses a concurrent redirect's click nor needs
-    # to know the current value.
+    # One statement for the whole batch, not one per link. The grouped increment
+    # D4 asks for: it reads as an atomic `+ n` per row, so it neither loses a
+    # concurrent redirect's click nor needs to know the current value.
+    #
+    # The aggregation into `deltas` is load-bearing, not tidying. `UPDATE ...
+    # FROM` joins each target row once and applies a single matching row from
+    # the right-hand side, so feeding it the same link twice would apply one of
+    # the two increments and silently drop the other. One row per link is what
+    # makes the arithmetic correct.
+    #
+    # The SQL text is a constant and the batch travels as two bound arrays.
+    # Building it by interpolation worked — the id went through `quote` and the
+    # count through `to_i` — but it produced a different statement for every
+    # batch size, so Postgres re-parsed and re-planned a thousand-tuple `VALUES`
+    # list every five seconds and could cache none of it. `unnest` gives one
+    # statement shape for every batch. It also leaves nothing for a reader, or
+    # for Brakeman, to have to verify: there is no interpolation to audit.
+    INCREMENT_SQL = <<~SQL.squish
+      UPDATE links
+      SET clicks_count = links.clicks_count + deltas.delta
+      FROM unnest($1::uuid[], $2::integer[]) AS deltas(id, delta)
+      WHERE links.id = deltas.id
+    SQL
+
+    UUID_ARRAY = ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Array.new(ActiveRecord::Type::String.new)
+    INTEGER_ARRAY = ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Array.new(ActiveRecord::Type::Integer.new)
+
     def increment_counters(clicks)
       deltas = clicks.each_with_object(Hash.new(0)) { |click, counts| counts[click[:link_id]] += 1 }
 
-      values = deltas.map do |link_id, count|
-        "(#{ApplicationRecord.connection.quote(link_id)}::uuid, #{count.to_i})"
-      end
+      binds = [
+        ActiveRecord::Relation::QueryAttribute.new("ids", deltas.keys, UUID_ARRAY),
+        ActiveRecord::Relation::QueryAttribute.new("deltas", deltas.values, INTEGER_ARRAY)
+      ]
 
-      ApplicationRecord.connection.execute(<<~SQL.squish)
-        UPDATE links
-        SET clicks_count = links.clicks_count + deltas.delta
-        FROM (VALUES #{values.join(', ')}) AS deltas(id, delta)
-        WHERE links.id = deltas.id
-      SQL
+      ApplicationRecord.connection.exec_update(INCREMENT_SQL, "Clicks::FlushJob Increment", binds)
     end
   end
 end
