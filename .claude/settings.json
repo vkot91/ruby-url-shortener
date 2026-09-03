@@ -8,7 +8,7 @@
             "type": "command",
             "if": "Bash(git commit:*)",
             "command": "jq -r '.tool_input.command' | grep -Eq -- '(^|[[:space:]])(--no-verify|-n)([[:space:]]|$)' || { \"$CLAUDE_PROJECT_DIR/hooks/pre-commit\" >&2 || exit 2; }",
-            "statusMessage": "Running RuboCop...",
+            "statusMessage": "Running RuboCop and Brakeman...",
             "timeout": 120
           }
         ]
