@@ -1,0 +1,66 @@
+meta {
+  name: Follow a short code - from cache
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/{{linkCode}}
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  followRedirects: false
+}
+
+tests {
+  test("answers exactly what the first request answered", function () {
+    // The point of the assertion is that it is the *same*: from T050 this
+    // response comes out of Redis and the previous one came out of Postgres,
+    // and a visitor must not be able to tell which.
+    expect(res.getStatus()).to.equal(302);
+    expect(res.getHeader("location")).to.equal("https://example.com/Hello?utm_source=poster");
+    expect(res.getHeader("cache-control")).to.equal("no-store");
+  });
+
+  test("still sets no cookie (FR-015, Principle V)", function () {
+    expect(res.getHeader("set-cookie")).to.be.undefined;
+  });
+
+  test("still sends an empty body", function () {
+    expect(res.body).to.be.empty;
+  });
+}
+
+docs {
+  The same request as the one before it, and that is the whole of the test.
+
+  From Phase 3C the first request for a code is a cache miss — one Postgres read
+  through `RedirectMiddleware`, which then writes `link:<code>` to Redis — and
+  every request after it is a cache hit answered by a single `GETEX` with no
+  Postgres access at all (research.md D1, D6). Those are two different code
+  paths producing what must be one response.
+
+  This collection cannot see which path answered; `spec/middleware/redirect_middleware_spec.rb`
+  asserts the absence of the query directly. What it can see, and what a client
+  actually depends on, is that the status, the `Location`, the `Cache-Control`
+  and the absence of a cookie do not change between them.
+
+  ## What changed under this in 3C
+
+  The click is no longer written during the request. The middleware pushes
+  `<link_id>:<timestamp>` onto the `clicks:buffer` Redis list after the response
+  triple is built, and `Clicks::FlushJob` drains it into Postgres every five
+  seconds in batches of a thousand (D4, FR-020, FR-021). So a counter read
+  immediately after this request may still be one behind; SC-005 gives it thirty
+  seconds, and the flush schedule spends five of them.
+
+  A Redis failure at that point is not visible here either, and must not be:
+  the response is constructed before the click is recorded, so losing a click
+  costs statistics and never a redirect (FR-022, SC-008).
+
+  Requires `linkCode`, set by `02 - Links / Create link`, and is only meaningful
+  when it runs after `Follow a short code`.
+}

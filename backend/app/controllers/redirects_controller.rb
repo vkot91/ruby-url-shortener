@@ -5,10 +5,15 @@
 # **Principle I waiver, plan.md**: this controller violates "the redirect path
 # is sacred" on purpose. It queries the system of record on every request and
 # writes the click synchronously, which is exactly the bottleneck Principle II
-# requires be measured before it is removed. Scope: T035–T044. Expiry: T045,
-# when RedirectMiddleware (T050) takes this path over and answers from one Redis
-# `GETEX` ahead of the router. `REDIRECT_CACHE_ENABLED` keeps this file runnable
-# afterwards so the baseline can be re-taken rather than trusted.
+# requires be measured before it is removed.
+#
+# The waiver has expired: RedirectMiddleware (T050) answers this path from one
+# Redis `GETEX` ahead of the router whenever `REDIRECT_CACHE_ENABLED` is true,
+# which is everywhere except a baseline run. What remains here is the 3B
+# measurement's subject, kept executable so the comparison can be repeated
+# against this checkout rather than trusted from a commit nobody can run, and
+# the fallback the middleware degrades to when Redis is unreachable
+# (SC-008). spec/requests/redirect_spec.rb runs the whole contract against both.
 #
 # What is *not* waived, and holds here exactly as it will in the middleware:
 # no cookie on any outcome, `Cache-Control: no-store` on the 302, and no rate

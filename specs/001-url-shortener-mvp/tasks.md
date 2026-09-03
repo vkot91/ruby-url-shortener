@@ -153,25 +153,44 @@ Three things landed alongside 3B that the task list did not name:
 
 ### 3C — Read path optimisation
 
-- [ ] T045 [P] [US1] Spec for `GETEX` TTL refresh-on-read behaviour in `backend/spec/services/cache/link_cache_spec.rb` (research.md D6)
-- [ ] T046 [P] [US1] Spec for the `__404__` sentinel and its 60s TTL in `backend/spec/services/cache/negative_cache_spec.rb` (FR-017, D7)
-- [ ] T047 [P] [US1] `Cache::LinkCache` in `backend/app/services/cache/link_cache.rb` — packed value carrying destination plus banned/deleted/account-banned flags
-- [ ] T048 [P] [US1] `Cache::NegativeCache` in `backend/app/services/cache/negative_cache.rb`
-- [ ] T049 [US1] Single-flight rebuild lock (`SET NX EX 5`) in `backend/app/services/cache/single_flight.rb` (D5, SC-007)
-- [ ] T050 [US1] `RedirectMiddleware` in `backend/app/middleware/redirect_middleware.rb` — one `GETEX`, no controller, no session, no ActiveRecord object (FR-013, FR-014, Principle I, D1)
-- [ ] T051 [US1] Insert middleware before `ActionDispatch::Session` in `backend/config/application.rb`
-- [ ] T052 [US1] Middleware spec asserting zero Postgres queries on a cache hit and no `Set-Cookie` in `backend/spec/middleware/redirect_middleware_spec.rb` (Principle I gate conditions, contracts/redirect.md)
-- [ ] T053 [US1] Replace the synchronous insert with `LPUSH clicks:buffer` constructed after the response triple, in `backend/app/middleware/redirect_middleware.rb` (FR-021)
-- [ ] T054 [US1] Spec asserting a Redis failure during click recording does not alter the redirect response, and that a lost in-flight batch costs only statistics, in `backend/spec/middleware/redirect_resilience_spec.rb` (FR-022, SC-008)
-- [ ] T055 [US1] `Clicks::FlushJob` in `backend/app/jobs/clicks/flush_job.rb` — atomic `LPOP key 1000`, bulk insert, grouped counter `UPDATE` (FR-020, D4)
-- [ ] T056 [US1] Sidekiq config and 5-second recurring schedule in `backend/config/sidekiq.yml`
-- [ ] T057 [US1] Flush job spec covering batch atomicity and counter accuracy in `backend/spec/jobs/clicks/flush_job_spec.rb`
-- [ ] T058 [US1] `after_commit` cache invalidation on `Link` in `backend/app/models/link.rb` (Principle IV, D2)
-- [ ] T059 [US1] Run the identical k6 script against the cached build and commit `load/results/cached.json`
-- [ ] T060 [US1] Enumeration script in `load/enumerate.js` and verification that absent codes produce flat Postgres load (SC-007)
-- [ ] T061 [US1] Stampede verification in `load/stampede.js` (referenced from quickstart.md): delete a hot key, drive 500 VUs, assert roughly one Postgres query rather than 500 (D5)
+- [X] T045 [P] [US1] Spec for `GETEX` TTL refresh-on-read behaviour in `backend/spec/services/cache/link_cache_spec.rb` (research.md D6)
+- [X] T046 [P] [US1] Spec for the `__404__` sentinel and its 60s TTL in `backend/spec/services/cache/negative_cache_spec.rb` (FR-017, D7)
+- [X] T047 [P] [US1] `Cache::LinkCache` in `backend/app/services/cache/link_cache.rb` — packed value carrying destination plus banned/deleted/account-banned flags
+- [X] T048 [P] [US1] `Cache::NegativeCache` in `backend/app/services/cache/negative_cache.rb`
+- [X] T049 [US1] Single-flight rebuild lock (`SET NX EX 5`) in `backend/app/services/cache/single_flight.rb` (D5, SC-007)
+- [X] T050 [US1] `RedirectMiddleware` in `backend/app/middleware/redirect_middleware.rb` — one `GETEX`, no controller, no session, no ActiveRecord object (FR-013, FR-014, Principle I, D1)
+- [X] T051 [US1] Insert middleware before `ActionDispatch::Session` in `backend/config/application.rb`
+- [X] T052 [US1] Middleware spec asserting zero Postgres queries on a cache hit and no `Set-Cookie` in `backend/spec/middleware/redirect_middleware_spec.rb` (Principle I gate conditions, contracts/redirect.md)
+- [X] T053 [US1] Replace the synchronous insert with `LPUSH clicks:buffer` constructed after the response triple, in `backend/app/middleware/redirect_middleware.rb` (FR-021)
+- [X] T054 [US1] Spec asserting a Redis failure during click recording does not alter the redirect response, and that a lost in-flight batch costs only statistics, in `backend/spec/middleware/redirect_resilience_spec.rb` (FR-022, SC-008)
+- [X] T055 [US1] `Clicks::FlushJob` in `backend/app/jobs/clicks/flush_job.rb` — atomic `LPOP key 1000`, bulk insert, grouped counter `UPDATE` (FR-020, D4)
+- [X] T056 [US1] Sidekiq config and 5-second recurring schedule in `backend/config/sidekiq.yml`
+- [X] T057 [US1] Flush job spec covering batch atomicity and counter accuracy in `backend/spec/jobs/clicks/flush_job_spec.rb`
+- [X] T058 [US1] `after_commit` cache invalidation on `Link` in `backend/app/models/link.rb` (Principle IV, D2)
+- [X] T059 [US1] Run the identical k6 script against the cached build and commit `load/results/cached.json`
+- [X] T060 [US1] Enumeration script in `load/enumerate.js` and verification that absent codes produce flat Postgres load (SC-007)
+- [X] T061 [US1] Stampede verification in `load/stampede.js` (referenced from quickstart.md): delete a hot key, drive 500 VUs, assert roughly one Postgres query rather than 500 (D5)
 
-**Checkpoint 3C**: US1 complete. SC-001, SC-002, SC-004, SC-005, SC-007 measurable. **This is the MVP.**
+**Checkpoint 3C**: US1 complete. SC-001, SC-002, SC-004, SC-005, SC-007 measurable. **This is the MVP.** ✅ 2026-09-01 — **1 130 → ~3 350 redirects/second on one worker (3.0×)**, p99 within SC-001's 50 ms up to 2 000/s rather than 500/s, cache hit ratio **97.45%**, 391 506 redirects with zero wrong destinations and zero lost clicks. SC-004 is met at four Puma workers (6 000/s at p99 25 ms) and not at one; the naive path at four workers reaches only 2 057/s, so the difference is the read path and not the process count. Enumeration: 60 001 requests → 504 Postgres transactions. Stampede: 500 concurrent requests at an expired hot key → 3. Full write-up in `load/results/cached-analysis.md`.
+
+Five things landed alongside 3C that the task list did not name:
+
+- `spec/support/redis.rb` and a test-only Redis database index (`config/initializers/redis.rb`).
+  The cache specs assert on real TTLs, a real sentinel expiring and a real buffer draining, none of
+  which survives a stubbed client — so they run against Redis, in a database of their own, rather
+  than flushing the developer's cache on every `rspec` run.
+- `spec/support/redirect_cache.rb`, and `spec/requests/redirect_spec.rb` restructured to run the
+  whole contract twice, once per path. Principle II says both paths stay runnable; running the
+  contract against both is what keeps that true rather than aspirational.
+- `sidekiq-scheduler`. Open-source Sidekiq has no periodic scheduler — `Sidekiq::Periodic` is an
+  Enterprise feature — and cron cannot express an interval shorter than a minute, which a
+  five-second flush needs.
+- `load/worker.sh`, `load/pg_transactions.sh`, `load/enumerate.sh`, `load/stampede.sh`. The two
+  SC-007 claims are about what Postgres was asked to do, which no client can observe; the shell
+  scripts are what read `pg_stat_database` either side of a run.
+- A `workers` line in `config/puma.rb`, defaulting to the single process every committed run used.
+  It exists because "the ceiling is one CRuby process" is a claim that has to be testable, and the
+  GVL means only process count can test it.
 
 ---
 

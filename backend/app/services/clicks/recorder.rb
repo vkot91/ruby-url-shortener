@@ -7,12 +7,12 @@ module Clicks
   # counter — which is a Principle I violation and is the point. Principle II
   # requires the baseline to be measured before it is optimised, and a baseline
   # that already avoids the bottleneck measures nothing. The waiver is recorded
-  # in plan.md, scoped to T035–T044, and expires at T045.
+  # in plan.md and scoped to T035–T044.
   #
-  # It is a service object rather than four lines in the controller so that 3C
-  # replaces one file: T053 swaps the body below for a single `LPUSH` onto the
-  # Redis buffer, and T055's flush job takes over the two statements. Nothing
-  # else has to move.
+  # 3C did not replace this; it routed around it. RedirectMiddleware buffers the
+  # click with one `LPUSH` (T053) and Clicks::FlushJob writes the two statements
+  # below in batches of a thousand (T055). What is left here is what the naive
+  # path still does, and therefore what a re-run of the baseline still measures.
   module Recorder
     # Both statements bypass the model layer on purpose. The click row has no
     # validations worth running and is written a few thousand times a second;

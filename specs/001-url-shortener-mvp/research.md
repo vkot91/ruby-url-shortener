@@ -299,6 +299,49 @@ still resolve correctly once Redis returns, because the miss path re-reads the a
 from Postgres. Worst case is up to 24 hours of stale cached entries for that account — noted, not
 solved, and detectable via the admin health endpoint.
 
+### Amendment (2026-09-03): the set expires out from under the keys it names
+
+The rationale above reasons about stale *members* — codes whose `link:` key has been evicted — and
+concludes they cost one wasted `DEL`. It does not reason about the stale *set*, and that is the case
+that matters.
+
+The two TTLs are refreshed by different events. `link:<code>` is read with `GETEX` (D6), so every
+request extends it. `account:<id>:codes` is written only by `LinkCache.write`, which runs only on a
+miss. A code that never misses again therefore keeps its cached entry alive indefinitely while its
+membership record expires 24 hours after the last miss.
+
+The failing sequence:
+
+1. `T0` — a link is cached on a miss; the set is written with a 24-hour expiry.
+2. `T0 .. T0+25h` — the link is read continuously. Each read pushes `link:<code>` out another 24
+   hours. No miss occurs, so nothing touches the set.
+3. `T0+24h` — `account:<id>:codes` expires.
+4. `T0+25h` — the account is banned. `SMEMBERS` returns empty. No `DEL` is issued.
+5. The link keeps redirecting until its own traffic stops for 24 hours.
+
+So the invalidation fails precisely for an account's *hottest* links, which for a ban issued over
+abuse is the worst subset to miss. This is a correctness hole in the ban, not a performance note.
+
+**Resolution**: at ban time the authority is Postgres, not the set —
+`Link.where(account_id:).pluck(:code)` and a pipelined `DEL` over the result. That is the third
+alternative listed above, which was kept as an "acceptable fallback if the set proves fiddly". It
+has proved fiddly.
+
+Once the ban reads Postgres, the set adds nothing to correctness and only bounds the number of `DEL`
+commands — from O(links owned) to O(links cached). That bound is not worth buying: a pipelined `DEL`
+of even 500 000 keys is well under a second, inside an admin operation performed rarely, and it is
+paid in Redis rather than on the redirect path. **The recommendation is therefore to drop
+`account:<id>:codes` entirely** and let the ban enumerate from the system of record.
+
+Refreshing the set's TTL on read was considered and rejected: it puts a second Redis command on
+100% of redirects to serve a condition that applies to a fraction of a percent of them, which is the
+same trade Principle I already rejected in the second alternative above.
+
+**Status**: recorded, not yet applied. `Cache::LinkCache.write` still issues the `SADD`/`EXPIRE`, and
+the consumer does not exist — the account ban is Phase 6 (T084 and its neighbours). The removal
+belongs in the same change that writes the ban, so that the set and the code that would have read it
+disappear together rather than leaving one without the other.
+
 ## D15a. pnpm as the frontend package manager
 
 **Decision**: pnpm, pinned by the `packageManager` field in `frontend/package.json` and activated

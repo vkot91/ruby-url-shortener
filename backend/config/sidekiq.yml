@@ -1,5 +1,24 @@
-# The click-flush schedule is added in Phase 3C (T056); this file exists now so
-# `bundle exec sidekiq -C config/sidekiq.yml` starts on a Phase 1 checkout.
 :concurrency: 5
 :queues:
   - default
+
+# T056, D4. The click buffer is drained every five seconds.
+#
+# Five rather than one: the batch is what makes this cheap, and a one-second
+# flush spends the same two statements on a fifth of the rows. Five rather than
+# thirty: SC-005 gives the creator's counter thirty seconds to catch up end to
+# end, and a thirty-second flush would spend the entire budget in the queue.
+#
+# `every` rather than a cron expression — cron cannot express an interval below
+# a minute, which is the reason sidekiq-scheduler is in the Gemfile at all.
+#
+# `first_in` keeps a freshly booted worker from flushing before the application
+# has finished loading, which on a cold start would be the first thing it does.
+:scheduler:
+  :schedule:
+    clicks_flush:
+      every: "5s"
+      first_in: "5s"
+      class: Clicks::FlushJob
+      queue: default
+      description: Drains clicks:buffer into Postgres in batches (research.md D4)

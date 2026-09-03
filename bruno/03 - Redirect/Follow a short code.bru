@@ -52,16 +52,25 @@ docs {
   that setting, turn "Follow redirects" off in the request's Settings tab by
   hand.
 
-  ## What this costs today
+  ## What this costs
 
-  Two synchronous Postgres writes per redirect — the click row and the counter —
-  which is a Principle I violation and is the point. Principle II requires the
-  baseline to be measured before it is optimised, and a baseline that already
-  avoids the bottleneck measures nothing. The waiver is recorded in plan.md,
-  scoped to T035-T044, and expires at T045.
+  This request is the cache *miss*: the first time anybody asks for a code,
+  `RedirectMiddleware` reads the link and its owner's ban state from Postgres in
+  one statement, writes the packed entry to `link:<code>` in Redis, and answers.
+  Every request after it is a hit — see `Follow a short code - from cache`,
+  which asserts the two are indistinguishable from out here.
 
-  Run this a few times, then re-create the link listing in a later phase to see
-  `clicks_count` follow.
+  One request in a collection cannot show the difference that makes. The
+  measurement can: `load/results/naive-analysis.md` and
+  `load/results/cached-analysis.md` are the same k6 script against the two
+  builds, and the delta between them is the project's headline claim
+  (Principle II).
+
+  With `REDIRECT_CACHE_ENABLED=false` the naive controller answers this instead,
+  writing the click row and the counter synchronously. That path stays in the
+  tree and stays runnable so the baseline can be re-taken rather than trusted;
+  everything asserted above holds either way, which is why
+  `spec/requests/redirect_spec.rb` runs the whole contract twice.
 
   Requires `linkCode`, set by `02 - Links / Create link`.
 }

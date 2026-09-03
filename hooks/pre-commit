@@ -1,34 +1,68 @@
 #!/bin/sh
-# Pre-commit gate: RuboCop must pass over the whole backend.
+# Pre-commit gate: the two backend checks that block CI must pass first.
+#
+#   RuboCop   -> `backend-lint`
+#   Brakeman  -> `backend-security`
 #
 # Enable in a fresh clone with:
 #     git config core.hooksPath hooks
 #
-# Bypass for a single commit with `git commit --no-verify`, or by exporting
-# SKIP_RUBOCOP=1. CI runs the same `bundle exec rubocop` as `backend-lint`, so
+# Both run, and both report, before the commit is refused. Stopping at the first
+# failure would hide the second one until the developer had fixed the first,
+# which is how a two-step fix becomes two round trips.
+#
+# Bypass a single commit with `git commit --no-verify`, or skip one check by
+# exporting SKIP_RUBOCOP=1 or SKIP_BRAKEMAN=1. CI runs the same two commands, so
 # a bypass here defers the failure rather than removing it.
 #
 # The whole backend is inspected, not just the staged files: an offense that
 # already sits in the tree fails CI on this commit regardless of who wrote it,
-# so the gate has to see it before the commit exists.
+# so the gate has to see it before the commit exists. Brakeman has no
+# staged-file mode at all — it needs the whole application to trace data flow
+# through it.
 
-set -e
+repo_root=$(git rev-parse --show-toplevel) || exit 1
+
+cd "$repo_root/backend" || exit 1
+
+failed=""
 
 if [ -n "$SKIP_RUBOCOP" ]; then
-  exit 0
+  echo "RuboCop: skipped (SKIP_RUBOCOP)"
+else
+  echo "RuboCop: checking backend..."
+
+  bundle exec rubocop || failed="$failed rubocop"
 fi
 
-repo_root=$(git rev-parse --show-toplevel)
+if [ -n "$SKIP_BRAKEMAN" ]; then
+  echo "Brakeman: skipped (SKIP_BRAKEMAN)"
+else
+  echo "Brakeman: scanning backend..."
 
-cd "$repo_root/backend"
+  # --no-pager because this runs non-interactively; Brakeman would otherwise try
+  # to page its report into a terminal that is not there.
+  bin/brakeman --no-pager || failed="$failed brakeman"
+fi
 
-echo "RuboCop: checking backend..."
-
-if bundle exec rubocop; then
+if [ -z "$failed" ]; then
   exit 0
 fi
 
 echo ""
-echo "Commit blocked: RuboCop found offenses in backend/."
-echo "Fix them, or run 'bundle exec rubocop -a' in backend/ for the autocorrectable ones."
+echo "Commit blocked:$failed found problems in backend/."
+
+case "$failed" in
+  *rubocop*)
+    echo "  RuboCop:  'bundle exec rubocop -a' in backend/ fixes the autocorrectable ones."
+    ;;
+esac
+
+case "$failed" in
+  *brakeman*)
+    echo "  Brakeman: fix the finding, or record a reviewed false positive with"
+    echo "            'bin/brakeman -I' in backend/, which writes config/brakeman.ignore."
+    ;;
+esac
+
 exit 1

@@ -83,10 +83,42 @@ module Backend
     #
     # This one carries a fallback where the connection settings deliberately do
     # not: an unset database URL is a misconfiguration, an unset feature flag is
-    # the documented default. False is the default because 3A is where the
-    # build currently is — the cache does not exist yet.
+    # the documented default. The default was false through 3A and 3B, when the
+    # cache did not exist; from 3C it is true, because the cached path is the
+    # product and the naive one is the measurement's subject. `load/serve.sh`
+    # passes the flag explicitly either way, so a baseline re-run does not
+    # depend on what this line says.
     config.x.redirect_cache_enabled = ActiveModel::Type::Boolean.new.cast(
-      ENV.fetch("REDIRECT_CACHE_ENABLED", "false")
+      ENV.fetch("REDIRECT_CACHE_ENABLED", "true")
     )
+
+    # T051. The redirect answers as early in the stack as it can while leaving
+    # the guarantees that are not ours to drop.
+    #
+    # The task names `ActionDispatch::Session` as the thing to sit in front of;
+    # this application has no session middleware at all (`api_only`, and the
+    # note above about cookies), so the marker becomes `ActionDispatch::Executor`
+    # — everything below it, from request-id generation and remote-IP resolution
+    # to the reloader, the exception pages, `Rack::ETag` and the router itself,
+    # is work a redirect does not need and now does not do.
+    #
+    # Not inserted at position 0: `ActionDispatch::SSL` and `ActionDispatch::Static`
+    # stay in front, so a redirect is still upgraded to HTTPS in production and
+    # a real file still wins over a code that spells its name.
+    #
+    # Being ahead of the executor is the reason the middleware wraps its own
+    # miss path in `Rails.application.executor` — see the comment there.
+    #
+    # `app/middleware` moves to the once-autoloader because the stack is built
+    # during initialization and holds one instance of this class for the life of
+    # the process. A reloadable constant referenced there is the classic
+    # "autoloading during initialization" mistake: the stack would keep the
+    # instance of an obsolete class after the first reload, and every request
+    # would run code the developer has already edited away.
+    config.autoload_once_paths << "#{root}/app/middleware"
+
+    initializer "backend.redirect_middleware", after: :load_config_initializers do |app|
+      app.middleware.insert_before ActionDispatch::Executor, RedirectMiddleware
+    end
   end
 end
