@@ -110,18 +110,28 @@ module Clicks
       WHERE links.id = deltas.id
     SQL
 
-    UUID_ARRAY = ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Array.new(ActiveRecord::Type::String.new)
-    INTEGER_ARRAY = ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Array.new(ActiveRecord::Type::Integer.new)
-
     def increment_counters(clicks)
       deltas = clicks.each_with_object(Hash.new(0)) { |click, counts| counts[click[:link_id]] += 1 }
 
-      binds = [
-        ActiveRecord::Relation::QueryAttribute.new("ids", deltas.keys, UUID_ARRAY),
-        ActiveRecord::Relation::QueryAttribute.new("deltas", deltas.values, INTEGER_ARRAY)
-      ]
+      ApplicationRecord.connection.exec_update(INCREMENT_SQL, "Clicks::FlushJob Increment", binds(deltas))
+    end
 
-      ApplicationRecord.connection.exec_update(INCREMENT_SQL, "Clicks::FlushJob Increment", binds)
+    # The array types are resolved here rather than held in constants, because a
+    # constant would be evaluated when the class is loaded and this class is
+    # loaded during `initialize!` whenever eager loading is on — which
+    # config/environments/test.rb turns on for CI and leaves off locally. At that
+    # point no connection has been established, so
+    # `ActiveRecord::ConnectionAdapters::PostgreSQL` does not exist yet and the
+    # reference takes the whole boot down with a NameError. By the time this runs
+    # the adapter is loaded by definition: the only caller is inside a
+    # transaction.
+    def binds(deltas)
+      array = ActiveRecord::ConnectionAdapters::PostgreSQL::OID::Array
+
+      [
+        ActiveRecord::Relation::QueryAttribute.new("ids", deltas.keys, array.new(ActiveRecord::Type::String.new)),
+        ActiveRecord::Relation::QueryAttribute.new("deltas", deltas.values, array.new(ActiveRecord::Type::Integer.new))
+      ]
     end
   end
 end
