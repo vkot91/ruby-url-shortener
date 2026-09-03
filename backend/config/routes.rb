@@ -5,6 +5,27 @@ Rails.application.routes.draw do
   # exceptions, otherwise 500. Used by load balancers and uptime monitors.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Sidekiq's own dashboard: queue depths, retries, the dead set, and the
+  # schedule sidekiq-scheduler maintains. It is a Rack app the Rails process
+  # mounts, not a container — there is no such thing as a standalone Sidekiq UI,
+  # because the UI is a view onto the same Redis the workers use.
+  #
+  # Development only, and therefore without authentication: the whole queue is
+  # readable and every job on it is cancellable from this page, so mounting it
+  # anywhere reachable would need credentials in front of it. Guarding the mount
+  # rather than the credentials keeps that decision from being one missing
+  # environment variable away from being wrong.
+  #
+  # `sidekiq` is in config/initializers/reserved_paths.rb in every environment,
+  # not only where this mount exists. It matches the code pattern, so without
+  # the reservation RedirectMiddleware would claim /sidekiq ahead of the router
+  # here — and a code that means a dashboard in development and a short link in
+  # production is worse than one that means neither.
+  #
+  # config/initializers/sidekiq.rb loads Sidekiq::Web under the same condition
+  # and gives it the Rack session its CSRF tokens need.
+  mount Sidekiq::Web => "/sidekiq" if Rails.env.development?
+
   namespace :api do
     namespace :v1 do
       # Singular paths, plural names: one registration is created, one session

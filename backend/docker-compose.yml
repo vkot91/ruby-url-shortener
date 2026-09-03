@@ -55,5 +55,52 @@ services:
       timeout: 3s
       retries: 10
 
+  # --- Dashboards ------------------------------------------------------------
+  # Read-only-ish debugging surfaces for the two stateful services. They are
+  # ordinary compose services rather than host installs for the same reason
+  # Postgres and Redis are: nobody wants to version a database client per
+  # machine.
+  #
+  # Both dial their backend over the compose network — `postgres:5432` and
+  # `redis:6379`, the container ports — not the published host ports. The
+  # non-default 5433/6380 above exist only so the natively-run Rails process
+  # does not collide with a system-wide install, and they are irrelevant in
+  # here.
+
+  adminer:
+    image: adminer:5
+    environment:
+      # The only prefill this image offers: its index.php reads
+      # ADMINER_DEFAULT_SERVER and nothing else, so the driver still defaults to
+      # MySQL and picking Postgres by hand is a connection refused waiting to
+      # happen. Open the deep link in quickstart.md instead — Adminer takes the
+      # driver, the server, the user and the database from the query string.
+      ADMINER_DEFAULT_SERVER: postgres
+    ports: ["${ADMINER_PORT}:8080"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redisinsight:
+    image: redis/redisinsight:2.70
+    environment:
+      # Seeds the connection list with db0 — the link cache and click buffer.
+      # It appears once the first-run agreement is accepted, not before: the
+      # seeding runs behind that screen. Sidekiq's db1 is the same server,
+      # reachable from the database selector in the browser; RedisInsight has
+      # no environment variable for a second database index.
+      RI_REDIS_HOST: redis
+      RI_REDIS_PORT: 6379
+      RI_REDIS_ALIAS: shortener
+    ports: ["${REDISINSIGHT_PORT}:5540"]
+    # Named volume so the connection, and anything configured in the UI,
+    # survives `docker compose down`. It holds no application state — deleting
+    # it costs one re-seeded connection.
+    volumes: ["redisinsight:/data"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   pgdata:
+  redisinsight:

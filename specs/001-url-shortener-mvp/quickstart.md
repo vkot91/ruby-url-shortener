@@ -29,7 +29,7 @@ through `dotenv-rails` in development and test. There is nothing to source by ha
 `.env.local` on its own.
 
 ```bash
-cd backend && docker compose up -d          # postgres + redis, nothing else
+cd backend && docker compose up -d          # postgres + redis, plus their dashboards
 cd backend && bin/rails db:prepare          # loads spec/fixtures on first create
 cd backend && bin/rails s                   # port 3001, set in config/puma.rb
 cd backend && bundle exec sidekiq           # separate shell
@@ -45,6 +45,29 @@ and the test runner in the same process as the code, and it removes the failure 
 `Gemfile.lock` edited on the host stops matching the gems baked into an image.
 
 Health check: `curl -sf localhost:3001/up` returns 200.
+
+### Dashboards
+
+Three read-only-when-you-want-them-to-be windows into the running stack, for when a
+symptom is easier to look at than to reason about:
+
+| Where | What it shows |
+|---|---|
+| [`localhost:8081/?pgsql=postgres&username=postgres&db=shortener_development`](http://localhost:8081/?pgsql=postgres&username=postgres&db=shortener_development) | Adminer, against Postgres. Password from `POSTGRES_PASSWORD` in `backend/.env` is the only field left to fill. |
+| `localhost:5540` | RedisInsight, against Redis. db0 (link cache, click buffer) is seeded — it appears after the one-time first-run agreement; db1 is Sidekiq's queue, one database switch away. |
+| `localhost:3001/sidekiq` | Sidekiq's own dashboard: queues, retries, the dead set, the schedule. |
+
+The first two are compose services and come up with `docker compose up -d`; their
+ports are `ADMINER_PORT` and `REDISINSIGHT_PORT` in `backend/.env`.
+
+Adminer's link carries its query string on purpose. The image prefills only the
+server, so the bare page offers MySQL and refuses the connection; `?pgsql=` picks
+the driver, and the rest saves typing the same three values every time. Swap
+`db=` for `shortener_test` to look at what the suite leaves behind.
+
+The third is mounted by the Rails process and exists in development only — it
+carries no authentication, which is exactly why it is not mounted anywhere
+else.
 
 ### The development dataset
 

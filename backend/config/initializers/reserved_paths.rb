@@ -27,6 +27,7 @@ Rails.application.config.x.reserved_codes = Set[*%w[
   packs
   robots
   settings
+  sidekiq
   signup
   sitemap
   static

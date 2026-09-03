@@ -25,7 +25,7 @@ test and in nothing else.
 Three shells, or two if you background the server.
 
 ```sh
-cd backend && docker compose up -d      # postgres + redis, as in quickstart.md
+cd backend && docker compose up -d      # postgres + redis and their dashboards, as in quickstart.md
 
 ./load/seed.sh                          # once; re-runnable, replaces rather than appends
 

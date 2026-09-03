@@ -12,7 +12,7 @@ with the code. Every request in here is a request the backend answers today;
    ```sh
    cd backend
    cp .env.example .env    # first time only
-   docker compose up -d    # postgres + redis
+   docker compose up -d    # postgres + redis, and the dashboards alongside them
    bin/rails s            # port 3001
    ```
 
