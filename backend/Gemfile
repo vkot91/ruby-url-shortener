@@ -44,6 +44,13 @@ end
 gem "redis", "~> 5.3"
 gem "connection_pool", "~> 2.4"
 gem "sidekiq", "~> 7.3"
+
+# The click buffer has to be drained every few seconds (research.md D4), and
+# open-source Sidekiq has no periodic scheduler — `Sidekiq::Periodic` is an
+# Enterprise feature. sidekiq-scheduler adds one, configured in
+# config/sidekiq.yml next to the queues, and unlike cron it can express an
+# interval shorter than a minute, which a five-second flush needs.
+gem "sidekiq-scheduler", "~> 6.0"
 gem "bcrypt", "~> 3.1"
 gem "jwt", "~> 2.9"
 

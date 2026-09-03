@@ -12,7 +12,12 @@
 #
 # Comparison is case-insensitive at the point of use: codes are [A-Za-z0-9], so
 # `Admin` collides with the same route that `admin` does.
-Rails.application.config.x.reserved_codes = %w[
+#
+# A Set rather than an Array because RedirectMiddleware consults it on every
+# request that looks like a code — ahead of the router and ahead of Redis — and
+# that is the one list in this application whose lookup cost is on the path
+# Principle I governs.
+Rails.application.config.x.reserved_codes = Set[*%w[
   admin
   api
   assets
@@ -26,4 +31,4 @@ Rails.application.config.x.reserved_codes = %w[
   sitemap
   static
   up
-].freeze
+]].freeze

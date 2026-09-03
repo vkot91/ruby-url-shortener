@@ -1,7 +1,7 @@
 meta {
   name: Unknown code
   type: http
-  seq: 2
+  seq: 3
 }
 
 get {
@@ -41,4 +41,22 @@ docs {
   A deleted link answers this same page rather than redirecting (FR-028): the
   row and the code survive so the statistics survive and the code is never
   handed to anyone else (FR-029, D12).
+
+  ## The absence is cached too
+
+  From Phase 3C a code confirmed absent is stored as the literal string
+  `__404__` under `link:<code>` for 60 seconds (research.md D7). Walking the code
+  space is ordinary traffic for a shortener, and without this every attempt is a
+  Postgres query — `load/enumerate.sh` drives 60 000 requests at 500 absent codes
+  and Postgres sees roughly 500 transactions, one per code rather than one per
+  request (SC-007).
+
+  Two consequences worth knowing when running this by hand:
+
+  - Sending this request twice in a minute exercises the sentinel the second
+    time. The response is identical, deliberately.
+  - A link created within that minute on a code somebody had already probed
+    still resolves immediately: creating a `Link` deletes the key in an
+    `after_commit` callback (T058, D2), so the absence does not outlive the
+    thing that made it wrong.
 }

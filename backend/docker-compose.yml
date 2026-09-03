@@ -32,9 +32,17 @@ services:
 
   redis:
     image: redis:7.4
-    # A bounded cache that evicts rather than OOMs. The click buffer lives in
-    # db1 alongside Sidekiq, which allkeys-lru would also evict — accepted for
-    # the reference environment, where 512mb is far above the working set.
+    # A bounded cache that evicts rather than OOMs.
+    #
+    # `maxmemory` and `maxmemory-policy` are per *server*, not per database, so
+    # `allkeys-lru` is entitled to every key on this instance: the link cache and
+    # the click buffer in db0, and Sidekiq's queues in db1. The db split
+    # (config/initializers/sidekiq.rb) separates naming and FLUSHDB, not
+    # eviction — isolating the queue from LRU would take a second instance.
+    #
+    # Accepted for the reference environment, where 512mb is far above the
+    # working set: 10 000 cached links measure ~2.5mb, and one entry costs ~250
+    # bytes with overhead, so the budget holds roughly two million of them.
     command: >
       redis-server
       --maxmemory 512mb

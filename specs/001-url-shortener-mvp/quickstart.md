@@ -177,10 +177,38 @@ commands assume, and why each part of it is what it is.
 k6 run -e RESULT=load/results/naive.json load/redirect.js
 
 ./load/serve.sh true
+./load/worker.sh                                  # separate shell — see below
 k6 run -e RESULT=load/results/cached.json load/redirect.js
 ```
 
 Same host, same corpus, same script, same k6 flags. Only the flag changes.
+
+The worker is the one asymmetry, and it is not an exemption from that rule. The cached path does
+not stop writing clicks; it stops writing them *during the request* (D4). `load/worker.sh` runs
+the Sidekiq process that drains `clicks:buffer` into Postgres, on the same host, competing for the
+same CPU. Leaving it out would let the cached run report a throughput it only reaches by not doing
+the work at all — and the buffer would grow for the length of the run instead of draining.
+
+Afterwards, the buffer should be empty and the clicks should all be there:
+
+```bash
+docker exec shortener-redis-1 redis-cli -n 0 LLEN clicks:buffer   # 0
+docker exec shortener-postgres-1 psql -U postgres -d shortener_load \
+  -tAc "SELECT count(*) FROM clicks; SELECT sum(clicks_count) FROM links;"
+```
+
+The two totals must agree with each other and with the request count k6 reports (FR-020, SC-005).
+
+### The two SC-007 verifications
+
+Both need the cached server running, and both report what *Postgres* saw rather than what the
+client saw — the difference between a request served from Redis and one served from Postgres is
+invisible from outside, so the assertion is made against `pg_stat_database`.
+
+```bash
+./load/enumerate.sh    # 60 000 requests at 500 absent codes → hundreds of queries, not tens of thousands
+./load/stampede.sh     # 500 concurrent requests at a just-expired hot key → a handful, not 500
+```
 
 The two scripts exist so that "same host" is enforced rather than remembered: they run the
 backend in production mode against a dedicated `shortener_load` database, with the thread count

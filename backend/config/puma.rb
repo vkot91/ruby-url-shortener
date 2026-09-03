@@ -27,6 +27,17 @@
 threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
 threads threads_count, threads_count
 
+# Process count. Zero means Puma runs single-process, which is what every run in
+# load/results/ so far was taken on and what `WEB_CONCURRENCY` unset continues to
+# mean — the reference environment does not move because this line exists.
+#
+# It exists because the 3C measurement needed to distinguish two explanations of
+# the same ceiling: a redirect path that has run out of work to remove, and one
+# CRuby process that has run out of CPU. The GVL means threads cannot tell them
+# apart and processes can, so the knob is here rather than in a shell script
+# that only the load harness knows about. See load/results/cached-analysis.md.
+workers Integer(ENV.fetch("WEB_CONCURRENCY", 0))
+
 # Specifies the `port` that Puma will listen on to receive requests.
 #
 # 3001, not Rails' default of 3000, because 3000 belongs to the Next.js dev
