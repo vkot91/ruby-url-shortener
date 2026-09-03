@@ -28,5 +28,12 @@ docs {
   a code the router would swallow is a code that never redirects.
 
   The reserved list today: admin, api, assets, favicon, login, logout, packs,
-  robots, settings, signup, sitemap, static, up.
+  robots, settings, sidekiq, signup, sitemap, static, up.
+
+  `sidekiq` is reserved in every environment although the Sidekiq dashboard is
+  mounted only in development (config/routes.rb). A segment that is a dashboard
+  on one machine and a short link on another is the failure the reservation
+  exists to prevent, so the list does not vary by environment — and for the same
+  reason there is no request here that opens /sidekiq: it would 404 against any
+  stack this collection is pointed at other than a development one.
 }
