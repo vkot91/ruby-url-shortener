@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -28,14 +29,19 @@ export function AccountMenu({ account }: { account: Account | null }) {
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel className="text-body-sm text-muted-foreground">
-          {account.email}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="text-body-sm text-muted-foreground">
+            {account.email}
+          </DropdownMenuLabel>
 
-        {isAdmin(account) && <DropdownMenuItem render={<Link href="/admin/reports">Admin</Link>} />}
+          <DropdownMenuSeparator />
 
-        <DropdownMenuItem render={<Link href="/sign-out">Sign out</Link>} />
+          {isAdmin(account) && (
+            <DropdownMenuItem render={<Link href="/admin/reports">Admin</Link>} />
+          )}
+
+          <DropdownMenuItem render={<Link href="/sign-out">Sign out</Link>} />
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
