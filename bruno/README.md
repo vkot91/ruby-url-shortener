@@ -22,6 +22,12 @@ with the code. Every request in here is a request the backend answers today;
 5. Run the folders in order — `00`, `01`, `02`, `03`. The numbering is the run
    order, not a category.
 
+A full run takes about fifteen seconds, and eleven of them are one deliberate
+wait: `01 - Auth / Refresh - replay after the grace window` sleeps out
+`Auth::RefreshTokens::GRACE` so that reuse detection can be observed over HTTP.
+RSpec travels through time instead; a live collection has to wait. Skip that one
+request if you are iterating and want the run back under four seconds.
+
 ## The account
 
 `dev@snip.test` / `development password`, held in the Local environment as
@@ -60,19 +66,21 @@ npx @usebruno/cli run --env Local
 `environments/Local.bru` holds the values that do not change between runs: where
 the stack is (`baseUrl`, `shortDomain`, `appUrl`, matching the defaults in
 `backend/.env.example`) and the seeded credentials (`email`,
-`password`).
+`password`). `appUrl` is not only for links out to the dashboard — it is the
+origin `02 - Links / Preflight - CORS` asserts the API allows, so it has to
+match `APP_URL` in `backend/.env` or that request fails.
 
 Everything else is a **runtime variable**, set by a request's post-response
 script and never written to disk:
 
 | Variable | Set by | Used by |
 | --- | --- | --- |
-| `accessToken` | Register, Sign in, Refresh | collection-level bearer auth |
+| `accessToken` | Register, Sign in, Refresh | collection-level bearer auth, and `List links - authenticated by cookie` |
 | `refreshToken` | Register, Sign in, Refresh | Refresh, Sign out |
-| `spentRefreshToken` | `Refresh` (pre-request) | `Refresh - replay a spent token` |
+| `spentRefreshToken` | `Refresh` (pre-request) | `Refresh - replay within the grace window`, `Refresh - replay after the grace window` |
 | `newAccountEmail`, `newAccountPassword` | `01 - Auth / Register` | `Register - duplicate email` |
 | `failedSignInEmail` | `Sign in - wrong password` (pre-request) | itself |
-| `linkId`, `linkCode` | `02 - Links / Create link` | `03 - Redirect` |
+| `linkId`, `linkCode` | `02 - Links / Create link` | `Fetch one link`, `03 - Redirect` |
 
 Runtime variables were chosen over environment variables on purpose: an
 environment variable set from a script is written back into

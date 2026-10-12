@@ -1,0 +1,70 @@
+meta {
+  name: Preflight - CORS
+  type: http
+  seq: 14
+}
+
+options {
+  url: {{baseUrl}}/api/v1/links
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{appUrl}}
+  Access-Control-Request-Method: GET
+  Access-Control-Request-Headers: authorization,content-type
+}
+
+tests {
+  test("allows the dashboard's origin, and names it rather than wildcarding", function () {
+    expect(res.getHeader("access-control-allow-origin")).to.equal(bru.getEnvVar("appUrl"));
+  });
+
+  test("allows the Authorization header, which is what the whole thing is for", function () {
+    expect(res.getHeader("access-control-allow-headers").toLowerCase()).to.include("authorization");
+  });
+
+  test("allows every method the API answers", function () {
+    const methods = res.getHeader("access-control-allow-methods").toUpperCase();
+
+    expect(methods).to.include("GET");
+    expect(methods).to.include("POST");
+    expect(methods).to.include("PATCH");
+    expect(methods).to.include("DELETE");
+  });
+
+  test("allows credentials, so the browser attaches the access cookie", function () {
+    expect(res.getHeader("access-control-allow-credentials")).to.equal("true");
+  });
+}
+
+docs {
+  research.md D10's unavoidable consequence. The dashboard and the API are
+  separate origins, so every authenticated request from the browser is preceded
+  by this preflight, and a client that does not get these headers cannot call
+  the API at all — which is why it belongs in the collection even though no
+  hand-written client ever sends one.
+
+  What is deliberately closed matters more than what is open:
+
+  - **One origin, named.** `APP_URL`, not `*`. A wildcard would let any page on
+    the internet read this API with a token it had obtained some other way.
+  - **`/api/*` only.** Change the URL above to `{{shortDomain}}`-style redirect
+    path and the header disappears: `Rack::Cors` is inserted *after*
+    `RedirectMiddleware`, so a cached redirect is answered before the CORS
+    middleware exists (Principle I). A redirect is a navigation, and the
+    same-origin policy does not govern navigations.
+  - **Credentials on, wildcard impossible.** The browser's access token is a
+    cookie the BFF set on a domain both origins share (research.md D10a), so it
+    is not attached to a cross-origin request without this. It is safe only in
+    company with the named origin above — the two together are what stop another
+    page reading this API with the visitor's own cookie — and browsers refuse
+    the `*` + credentials combination outright, which is a guard rail rather
+    than a plan. CSRF is answered separately, by `SameSite=Lax` on the cookie:
+    a cross-site POST or fetch carries no cookie at all.
+
+  Worth pasting in by hand, to watch it refuse:
+
+      Origin: https://evil.example   → no Access-Control-Allow-Origin at all
+}

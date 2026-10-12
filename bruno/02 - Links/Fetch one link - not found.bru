@@ -1,0 +1,37 @@
+meta {
+  name: Fetch one link - not found
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/v1/links/00000000-0000-4000-8000-000000000000
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("answers 404 rather than confirming or denying anything else", function () {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.body.error.code).to.equal("not_found");
+  });
+}
+
+docs {
+  FR-002's "indistinguishable by design", from the reading side.
+
+  This id belongs to no link at all. Another account's id — `riv4l99`'s, say —
+  produces a byte-identical response: the same 404, the same `not_found`, the
+  same message. That is the point, and it is why the ownership scope lives in
+  the query rather than in a branch after it. A 403 would confirm that the id
+  names a real link, which is exactly the fact the caller is not entitled to.
+
+  The pair is asserted in
+  `backend/spec/requests/api/v1/links_isolation_spec.rb`, which compares the two
+  response bodies directly — something this collection cannot do, because
+  nothing here knows the rival's link id and giving it one would mean adding an
+  endpoint that hands it over.
+
+  A soft-deleted link of the caller's own answers the same way (FR-028): the row
+  and its statistics survive, but it is gone from the API.
+}

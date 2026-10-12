@@ -1,0 +1,59 @@
+meta {
+  name: Refresh - replay within the grace window
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "refresh_token": "{{spentRefreshToken}}"
+  }
+}
+
+tests {
+  test("answers the replay instead of ending the session", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.body.access_token).to.be.a("string").and.not.be.empty;
+  });
+
+  test("keeps the client in the same family rather than opening a new session", function () {
+    expect(res.body.refresh_token).to.not.equal(bru.getVar("spentRefreshToken"));
+    expect(res.body.refresh_token).to.not.equal(bru.getVar("refreshToken"));
+  });
+
+  test("the successor issued before the replay still works", function () {
+    expect(res.body.expires_in).to.equal(900);
+  });
+}
+
+docs {
+  `Auth::RefreshTokens::GRACE` — ten seconds during which a second presentation
+  of an already-spent token is read as the same client retrying, not as somebody
+  else holding a copy.
+
+  It exists because "presented twice" has two causes and only one is theft. Two
+  browser tabs whose access tokens expire in the same second send the same
+  refresh token milliseconds apart; so does a reload racing a poll, or a retry
+  after a response was lost coming back. Without the window every one of those
+  revoked the family and signed the person out of every tab — a bug that fired
+  on ordinary use and looked, from the server's side, exactly like the attack it
+  was meant to catch.
+
+  What it costs, stated rather than discovered: only the digest of a refresh
+  token is stored, so the first successor's raw string cannot be handed back and
+  a second one is issued instead. For up to ten seconds a family carries two
+  live tokens.
+
+  The theft half is the next request, which is also why this collection takes
+  ten seconds longer than it otherwise would.
+}

@@ -49,7 +49,13 @@ RSpec.describe "Access and refresh token lifecycle", type: :request do
     probe(rotated["access_token"])
     expect(response).to have_http_status(:created)
 
-    # The spent token does not. This is the "rotation" half.
+    # The spent token does not — once the grace window that covers a client
+    # retrying itself has closed. Inside it, a replay is two tabs refreshing in
+    # the same second and is answered rather than punished
+    # (Auth::RefreshTokens::GRACE, and the spec beside it).
+    travel(Auth::RefreshTokens::GRACE + 1.second)
+
+    # This is the "rotation" half.
     refresh(original["refresh_token"])
 
     expect(response).to have_http_status(:unauthorized)

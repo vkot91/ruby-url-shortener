@@ -1,0 +1,44 @@
+meta {
+  name: Fetch one link
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/v1/links/{{linkId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("returns the link created at the top of this folder", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.body.id).to.equal(bru.getVar("linkId"));
+    expect(res.body.code).to.equal(bru.getVar("linkCode"));
+  });
+
+  test("returns the same Link schema the list and the create action return", function () {
+    expect(Object.keys(res.body).sort()).to.deep.equal([
+      "clicks_count",
+      "code",
+      "created_at",
+      "destination_url",
+      "id",
+      "name",
+      "short_url",
+    ]);
+  });
+
+  test("builds the short URL on the short domain", function () {
+    expect(res.body.short_url).to.equal(`https://${bru.getEnvVar("shortDomain")}/${res.body.code}`);
+  });
+}
+
+docs {
+  contracts/openapi.yaml `/links/{id}` GET. What the edit form loads before it
+  can prefill anything (T080).
+
+  One shape for three actions — create, list, and this one all render the same
+  `Link`. A field that appeared in one and not the others would make a client
+  branch on which verb its copy of a link arrived from.
+}

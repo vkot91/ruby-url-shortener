@@ -1,0 +1,78 @@
+meta {
+  name: List links - authenticated by cookie
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/api/v1/links
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: snip_access={{accessToken}}
+}
+
+tests {
+  test("authenticates on the cookie alone, with no Authorization header", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.body.links).to.be.an("array");
+  });
+
+  test("scopes to the same account the header would have", function () {
+    const codes = res.body.links.map((link) => link.code);
+
+    expect(codes).to.not.include("riv4l99");
+  });
+
+  test("still sets no cookie of its own — reading one grants no power to write one", function () {
+    expect(res.getHeader("set-cookie")).to.be.undefined;
+  });
+}
+
+docs {
+  research.md D10a. The browser sends the access token as an httpOnly cookie the
+  Next.js BFF set on a domain both origins share; a mobile app or a CLI sends
+  the same token in `Authorization: Bearer`. This request is the first of those
+  two, done by hand.
+
+  It is one credential read from two places, not two kinds of credential. The
+  signature check, the claims, and the expiry are identical either way, and the
+  header wins if a client somehow sends both — a header had to be constructed on
+  purpose, while a cookie rides along and cannot express intent.
+
+  Why a cookie at all: the token used to live in a JavaScript variable, which
+  died with the page, so every reload spent a refresh token to mint another.
+  That is not a security property — it is a consequence of where the value was
+  kept, and it made two tabs opening at once look to the server like theft. An
+  httpOnly cookie cannot be read by script at all, and a refresh now happens
+  only when the token has actually expired.
+
+  Both cookies are `Path=/`, and which one means "signed in" is the part worth
+  knowing:
+
+  - `snip_refresh` is the session. The dashboard's route guard tests for it, and
+    for nothing else.
+  - `snip_access` is a transient. It expires every fifteen minutes and its
+    absence is an ordinary, recoverable state — deleting it by hand should cost
+    one refresh request, not a sign-out. A revision of the guard that tested
+    this cookie instead did sign people out, which is why the distinction is
+    written down in three places.
+
+  Neither puts a credential on the redirect path in production: the short domain
+  is a different registrable domain from the one `SESSION_COOKIE_DOMAIN` names,
+  so no session cookie is sent there at all. Locally they share `localhost` and
+  the access cookie does arrive — where it is read by nothing, since the
+  redirect runs in middleware ahead of the router. Principle V governs what is
+  *set* on that path, and this API cannot set a cookie anywhere.
+
+  Rails still has no cookie middleware. `request.cookies` is Rack parsing a
+  request header, which grants no ability to set one — hence the third test.
+
+  Variations worth pasting in by hand:
+
+      Cookie: snip_access=nonsense        → 401 unauthenticated
+      Cookie: snip_access=                → 401 unauthenticated
+      (an access token older than 15 min) → 401 token_expired
+}
