@@ -26,16 +26,18 @@ then measured with the identical harness. Both implementations remain runnable b
 
 *Backend*: Rails 8.0 (API-only + Rack middleware, `has_secure_password` and `rate_limit`), the
 `jwt` gem for HS256 access tokens, Puma, `redis-rb` 5.x with connection pooling, Sidekiq 7 for
-background work. No cookie middleware is in the stack at all (research.md D10).
+background work, `rack-cors` naming the dashboard as the one allowed origin. No cookie middleware
+is in the stack at all (research.md D10): the API reads the browser's access cookie and can set
+none (D10a).
 
 *Frontend*: Next.js 15 (App Router) with React 19, Tailwind CSS 4, shadcn/ui for accessible
 primitives (dialog, table, toast, form), zod for schema validation shared between forms and the
 typed API client, react-hook-form with `@hookform/resolvers` for form state, and TanStack Query
 scoped **only** to polling the dashboard click counts.
 
-*Deliberately excluded*: no client state manager (Zustand, Redux) — the access token lives in
-memory, the refresh token in an httpOnly cookie held by the Next.js BFF, and everything else is
-server data; no charting library — MVP renders one integer per link,
+*Deliberately excluded*: no client state manager (Zustand, Redux) — both tokens live
+in httpOnly cookies written by the Next.js BFF (research.md D10a), identity is `GET /api/v1/me`
+(D10b), and everything else is server data; no charting library — MVP renders one integer per link,
 and charts belong to the out-of-scope paid analytics tier.
 
 **Storage**: PostgreSQL 17 as system of record; Redis 7.4 as read cache, click buffer, and Sidekiq
@@ -71,7 +73,7 @@ orders of magnitude above link volume. Four user stories, 35 functional requirem
 | II. Measure Before, Measure After | Naive baseline exists, is runnable, and is measured before optimisation | PASS | PASS — `REDIRECT_CACHE_ENABLED` flag keeps both paths live; identical k6 script for both runs; results committed as data |
 | III. The Store Enforces Its Own Invariants | Uniqueness by constraint, not check-then-write | PASS | PASS — unique index on `links.code`, insert-and-rescue `PG::UniqueViolation`, no existence query |
 | IV. Cache Invalidation Belongs To The Write | Invalidation in the same operation as the write, before acknowledgement | PASS | PASS — `after_commit` on `Link` deletes the cache key before the HTTP response returns; see research.md for why after-commit rather than in-transaction |
-| V. The Visitor Is Not The Product | No plain IP stored, no redirect cookie, audited admin access to customer analytics | PASS | PASS — MVP click record holds only `link_id` and timestamp; no IP reaches the click row at all. Bearer-token auth means `ActionDispatch::Cookies` is not in the middleware stack, so "no cookie on the redirect" is structural rather than asserted |
+| V. The Visitor Is Not The Product | No plain IP stored, no redirect cookie, audited admin access to customer analytics | PASS | PASS — MVP click record holds only `link_id` and timestamp; no IP reaches the click row at all. Token auth that reads a cookie but never writes one (D10a) means `ActionDispatch::Cookies` is not in the middleware stack, so "no cookie on the redirect" is structural rather than asserted |
 
 **Result**: All gates pass for the delivered system. One time-boxed waiver is recorded below.
 

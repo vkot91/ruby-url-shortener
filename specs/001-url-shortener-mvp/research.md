@@ -224,6 +224,152 @@ revocation is where JWT hurts. What it did not weigh was that the project has no
 ahead of it and that FR-031's guarantee is about visitors, not creators — so the revocation it was
 protecting was never the one the requirement asked for.
 
+### D10a. Amendment — the browser's access token is a cookie, not a JavaScript value
+
+**Status**: Amends D10 above, which stands otherwise. The credential, the rotation scheme, and the
+reuse detection are unchanged; only *where a browser keeps the access token* changes.
+
+**Decision**: The Next.js BFF writes the access token to an httpOnly `snip_access` cookie scoped to
+`Path=/` on a domain both origins share (`SESSION_COOKIE_DOMAIN`, unset locally). Rails reads the
+token from `Authorization: Bearer` first and from that cookie second. The browser holds no token in
+JavaScript at all. Non-browser clients are untouched: a mobile app or a CLI still sends the header,
+which is D10's first driver and the reason the header stays the primary source.
+
+**Why it was changed**: the original arrangement kept the access token in a module variable, on the
+reasoning that memory is a smaller prize for an XSS than storage. Two things were wrong with that.
+
+1. *The security claim was thinner than it read.* An XSS on the dashboard can call
+   `/api/auth/refresh` and mint a token whether or not one is sitting in a variable. The real
+   difference was only between reading a value once and having to run code on a live page — narrow,
+   and not worth what it cost. An httpOnly cookie is strictly better on this axis than either a
+   variable or `localStorage`: script cannot read it at all.
+2. *It caused a bug.* A variable dies with the page, so every full page load spent a refresh token
+   to mint another. That is not a security property; it is a consequence of where the value was
+   kept. And because rotation is single-use with reuse detection, two tabs opening at once — or one
+   reload racing another — presented the same refresh token twice and the family was revoked. The
+   user was signed out of everything by ordinary use, and the server could not tell that case from
+   the theft it was designed to catch. Reproduced before the change: two concurrent refreshes with
+   one token returned `201` and `token_reuse_detected`.
+
+A refresh now happens when the token has actually expired and at no other time.
+
+**The cost, accepted explicitly**:
+
+- *Two ways in.* Rails accepts the token from a header or a cookie. That is two paths to keep
+  correct, and `spec/requests/api/v1/cookie_authentication_spec.rb` exists to keep them identical —
+  same signature check, same claims, same expiry, same codes. It is deliberately *not* a second kind
+  of credential: there is one signed access token, read from whichever place the client had.
+- *CSRF becomes a question again*, having been a non-question while nothing was ambient. It is
+  answered by `SameSite=Lax` on the cookie — a cross-site POST or fetch carries no cookie — together
+  with a CORS policy that names one origin and must never become `*`. This API has no
+  state-changing GET for a top-level navigation to reach.
+- *A deployment constraint.* The dashboard and the API must be siblings under one registrable
+  domain (`app.snip.to` / `api.snip.to`). Two unrelated domains would make this cross-site, which is
+  the arrangement D10 rejected and this does not resurrect. Cookies are not isolated by port
+  (RFC 6265 §8.5), so `localhost:3000` and `localhost:3001` already satisfy this locally.
+- *A grace window on rotation.* Even with the token persisted, two tabs can hit expiry in the same
+  second. `Auth::RefreshTokens::GRACE` (10s) treats a replay inside that window as the same client
+  retrying and issues a second successor rather than revoking the family. Only the digest is stored,
+  so the first successor's raw string is unrecoverable — hence a second one rather than the same
+  one, and hence a family carrying two live tokens for up to ten seconds. Outside the window, which
+  is where a copy taken from a log or a backup is actually spent, detection is unchanged.
+
+**What did not change**: `api_only` still runs with no `ActionDispatch::Cookies` in the stack.
+Reading a cookie is Rack parsing a request header and grants no ability to set one, so "nothing in
+this application can set a cookie even by accident" — and with it the redirect's structural
+`no Set-Cookie` guarantee (FR-015, Principle V) — survives intact. Note what the principle governs:
+what may be *set* on the redirect path, not what happens to arrive there. In production nothing
+arrives either, the short domain being a different registrable domain from the one
+`SESSION_COOKIE_DOMAIN` names; locally the two share `localhost` and the access cookie is sent, read
+by nothing, and answered with no cookie of any kind.
+
+**Alternatives considered**:
+- *`localStorage` with the header*: removes the same round trip and needs no Rails change at all,
+  but leaves a readable token on disk. Rejected once the cookie was shown to be workable across
+  ports and subdomains, since the cookie is better on exactly the axis that motivated D10's original
+  in-memory choice.
+- *Proxying every `/api/v1/*` call through the BFF*: the browser would hold nothing and CORS would
+  disappear, at the cost of an extra hop on every call and of abandoning D10's first driver — the
+  header would stop being the same credential for every client type. Rejected.
+
+### D10b. Amendment — nothing in the browser describes the session except the credentials
+
+**Status**: Amends D10a. The token arrangement is unchanged; what changes is that the readable
+`snip_account` cookie D10a introduced alongside it is deleted, and identity moves to an endpoint.
+
+**Decision**: `GET /api/v1/me` returns the signed-in account (`AccountSerializer`: id, email, role,
+plan, created_at), fetched by the browser through `useAccount` and drawn behind a placeholder in the
+header. The route guard in `src/middleware.ts` tests for the presence of `snip_refresh`, which is
+why both cookies are now `Path=/`. The client's session handling collapses to one rule:
+
+> 401 → ask the BFF to refresh → renewed? retry once. refused? sign out. unreachable? report and
+> leave the session alone.
+
+**Why it was changed**: `snip_account` held an email address and a role, readable by script, written
+once at sign-in. It was serving three callers and was the wrong answer for each.
+
+1. *As identity* it was a cache with no invalidation. An address corrected or a role granted after
+   sign-in stayed invisible until the session was closed and reopened, because nothing rewrote the
+   cookie — `POST /api/auth/refresh` cannot, a token pair carrying no identity.
+2. *As a refresh precondition* in `src/lib/api.ts` it was a guess at a question the BFF can answer
+   exactly. Whether a refresh token exists is knowable only to the process holding the httpOnly
+   cookie, and `POST /api/auth/refresh` already answers it — 401 with the session cleared when there
+   is nothing to spend. The guess could be wrong in both directions, and in one of them it stranded
+   a live session: the client read `unauthenticated` with no account cookie, concluded "signed out",
+   and refused to try the refresh that would have worked.
+3. *As a route guard* it was a copy of a fact the session already held. Copies drift; the cookies
+   themselves cannot.
+
+It also put a person's email address in a cookie attached to requests with no use for it — including
+the redirect path, on a machine where the API and the short domain share a host.
+
+**The cost, accepted explicitly**:
+
+- *A request where there was a cookie read.* The dashboard layout now makes one server-to-server
+  call to `/me` per render. It is on the app path, not the redirect path, so Principle I is not
+  engaged; and it is the price of the answer being current.
+- *A placeholder in the header for one paint.* The address is no longer in the first byte of HTML.
+  The layout did `await` it on the server for one revision, and Next.js is explicit about what that
+  costs: a top-level `await` in a layout "delays the first streamed chunk for that segment and holds
+  `{children}` behind that work" — the link list waiting on a request only the account menu needed.
+  Fetching it from the browser also happens to be the only version that survives an access token
+  which expired before the page was requested: refreshing writes cookies, and a server component
+  cannot.
+- *Both cookies at `Path=/`.* Credentials now ride on page requests to the app origin — the origin
+  whose own BFF issued them, over httpOnly cookies with `SameSite=Lax`. The alternative was a narrow
+  path, which is what forced the marker cookie this amendment deletes.
+- *A forgeable guard.* Writing `snip_refresh=anything` reaches the dashboard. It always did — the
+  marker was forgeable too — and it buys nothing: every request comes back 401 and the client signs
+  the visitor out on the refused refresh. Next.js says the same thing in its own words: a proxy
+  check "should not be your only line of defense", and the majority of checks belong "as close as
+  possible to your data source" — here, Rails, on every request, against a signed token.
+
+**What did not change**: `role` is still display only. Authorisation reads the role claim from the
+verified access token on every request, so `/me` and the token may disagree for up to fifteen
+minutes and a browser that talked itself into `admin` meets 403 (FR-003). `spec/requests/api/v1/
+me_spec.rb` asserts the serializer's field list so that a permissions array cannot quietly appear
+there.
+
+**Corrected in review, and worth recording because the bug was mine and it shipped for an hour**:
+the guard first tested `snip_access`. Deleting that cookie by hand then signed the person out
+completely — middleware redirected to `/sign-in` before the page could render, so the one refresh
+request that would have recovered the session never ran. The access token is a transient whose
+absence is the ordinary recoverable state; the session is the refresh-token family. An optimistic
+guard must test the session, and this one now does.
+
+**Alternatives considered**:
+- *Keep a valueless `snip_session=1` marker for the guard, and add `/me` for identity*: fixes the
+  PII and the staleness but keeps a second copy of the session's existence, which was the objection.
+  Rejected once widening the real cookies was shown not to violate Principle V.
+- *Refresh inside middleware, setting the rotated cookies on the response*: the pattern several auth
+  SDKs ship, and it would put the address back in the first byte of HTML. Rejected on Next.js'
+  own guidance — a proxy "runs on every route, including prefetched routes", so a network call there
+  is paid on navigations that never needed it, and a rotation triggered by a prefetch spends a
+  single-use token for a page nobody opened.
+- *Guard in the layout instead of in middleware*: Next.js warns that a layout "does not control
+  whether the rest of the route renders" and that checks in layouts are skipped on client-side
+  transitions, so it is the wrong place for a route guard whatever the cookie paths are.
+
 ## D11. SSRF validation resolves DNS before accepting a destination
 
 **Decision**: `Urls::SafetyValidator` parses the URL, rejects non-http(s) schemes, resolves the

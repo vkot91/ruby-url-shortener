@@ -42,7 +42,7 @@ the second half.
 | `account_id` | uuid | NOT NULL, FK → accounts, ON DELETE CASCADE | |
 | `token_digest` | text | NOT NULL, UNIQUE | SHA-256; the raw token exists only in the client's hands |
 | `family_id` | uuid | NOT NULL | one sign-in opens one family; rotation stays inside it |
-| `used_at` | timestamptz | NULL | set when exchanged; a token presented with this set is a replay |
+| `used_at` | timestamptz | NULL | set when exchanged; a token presented with this set is a replay, read as a retry for 10 s and as reuse after |
 | `expires_at` | timestamptz | NOT NULL | 30 days from issue |
 | `revoked_at` | timestamptz | NULL | |
 | `user_agent` / `ip_address` | text | NULL | the *account holder's*, at sign-in — not a visitor's; Principle V governs the redirect path, not authenticated sessions |
@@ -56,9 +56,13 @@ the second half.
   that can extend a session, and therefore the only thing that has to be revocable.
 - Rotation is mandatory: every exchange stamps `used_at` on the presented token and issues a
   successor in the same family.
-- **Reuse detection**: presenting a token that already has `used_at` set means either the client
-  replayed itself or somebody else holds a copy. There is no way to tell which, so the entire
-  family is revoked and the human signs in again.
+- **Reuse detection**: presenting a token whose `used_at` is more than
+  `Auth::RefreshTokens::GRACE` (10 seconds) old means somebody holds a copy. The entire family is
+  revoked and the human signs in again.
+- **Grace window**: a replay *inside* those ten seconds is the same client retrying — two tabs
+  expiring together, or a response lost on the way back — and is answered with a second successor
+  in the same family. Only the digest is stored, so the first successor cannot be handed back;
+  a family may therefore carry two live tokens for up to ten seconds (research.md D10a).
 - Banning an account revokes every family it owns, fired from the write itself
   (`after_update_commit` on `Account`) rather than from whichever controller applied the ban.
 - Revocation of an access token is not possible and not attempted; see D10's recorded window.

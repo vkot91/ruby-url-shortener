@@ -5,10 +5,16 @@ info:
   description: |
     JSON API on the app domain, consumed by the Next.js dashboard and admin area.
     The public redirect surface is a separate contract; see contracts/redirect.md.
-    Authentication is a bearer access token: `Authorization: Bearer <jwt>`, HS256, 15-minute
-    lifetime, verified by signature alone. Refresh is an opaque rotating token — see research.md
-    D10. This API sets no cookies on any path; the browser client's refresh token is held by the
-    Next.js BFF on its own origin.
+    Authentication is an access token: HS256, 15-minute lifetime, verified by signature alone.
+    It arrives either as `Authorization: Bearer <jwt>`, which is what a mobile app or a CLI
+    sends, or as the `snip_access` cookie, which is what a browser sends — one credential read
+    from whichever place the client had (research.md D10a). Refresh is an opaque rotating token
+    the browser never sees.
+
+    This API reads cookies and sets none, on any path. Both session cookies are written by the
+    Next.js BFF; `ActionDispatch::Cookies` is deliberately absent from the middleware stack, so
+    the redirect surface's `no Set-Cookie` guarantee is structural rather than a convention
+    (FR-015).
 
 servers:
   - url: https://app.example.com/api/v1
@@ -96,8 +102,12 @@ paths:
       security: []
       description: |
         Rotation is mandatory: the presented token is consumed and a successor is issued in the
-        same family. Presenting a token that has already been exchanged is treated as a
-        compromise — the entire family is revoked and the caller must sign in again.
+        same family. Presenting a token that was exchanged more than ten seconds ago is treated
+        as a compromise — the entire family is revoked and the caller must sign in again.
+
+        Inside those ten seconds a replay is read as the same client retrying (two tabs expiring
+        together, a lost response) and answered with `201` and a second successor in the same
+        family, not with the first one again (research.md D10a).
       requestBody:
         required: true
         content:
@@ -109,20 +119,53 @@ paths:
                 refresh_token: { type: string }
       responses:
         '201':
-          description: A new pair. The presented token is now dead.
+          description: |
+            A new pair. The presented token is now spent: replaying it succeeds once more
+            within the ten-second grace window and revokes the family after it.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/TokenPair' }
         '401':
           description: |
             `error.code` is `invalid_refresh_token` when the token is unknown, expired, or
-            revoked, and `token_reuse_detected` when an already-exchanged token was replayed.
-            The second case has also just revoked the whole family.
+            revoked, and `token_reuse_detected` when an already-exchanged token was replayed
+            after the grace window. The second case has also just revoked the whole family.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '429':
           description: Too many attempts from this origin in the last hour (FR-036).
+
+  /me:
+    get:
+      tags: [auth]
+      summary: The signed-in account (FR-001)
+      description: |
+        Who the caller is, read from the row rather than from the token. The dashboard needs an
+        address for its header and a role to decide whether to draw the admin link; this is the
+        only place either is published.
+
+        `role` here is display, not authority. Authorisation reads the role claim in the signed
+        access token, which is refreshed at most every fifteen minutes, so the two are allowed
+        to disagree for that long — a client that granted itself the admin area from this field
+        would reach endpoints that answer 403.
+      responses:
+        '200':
+          description: The caller's account.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [account]
+                properties:
+                  account: { $ref: '#/components/schemas/Account' }
+        '401':
+          description: |
+            `error.code` is `token_expired` when a token arrived and has aged out, and
+            `unauthenticated` when none arrived or it did not verify.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /links:
     get:
@@ -130,10 +173,17 @@ paths:
       summary: List the caller's links (FR-002, FR-023)
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
-        - { name: per_page, in: query, schema: { type: integer, default: 25, maximum: 100 } }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 25, maximum: 100 }
+          description: >-
+            Clamped, not validated: a value above 100 returns 100, and anything that is not a
+            positive integer returns the default. `pagination.per_page` reports what was applied.
       responses:
         '200':
-          description: Only links owned by the caller. Never another account's.
+          description: >-
+            Only links owned by the caller, never another account's. Newest first; soft-deleted
+            links are absent.
           content:
             application/json:
               schema:
@@ -325,8 +375,19 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Short-lived access token. A 401 with `error.code` of `token_expired` means refresh and
-        retry; any other 401 means sign in again. Clients must distinguish the two.
+        Short-lived access token, sent by non-browser clients. A 401 with `error.code` of
+        `token_expired` means refresh and retry; `unauthenticated` means none arrived or it did
+        not verify. Takes priority over the cookie when both are present.
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: snip_access
+      description: |
+        The same access token, as the browser sends it: an httpOnly cookie written by the
+        Next.js BFF and attached by `credentials: include`. Not a second credential — the
+        signature check, claims, expiry, and error codes are identical (research.md D10a).
+        The browser client treats every 401 alike: refresh once through the BFF, retry once,
+        and sign out if the refresh is refused (D10b).
 
   schemas:
     TokenPair:
@@ -335,8 +396,11 @@ components:
       properties:
         access_token:
           type: string
-          description: >-
-            JWT. Send as `Authorization: Bearer`. Hold in memory, never in localStorage.
+          description: |
+            JWT. A non-browser client sends it as `Authorization: Bearer` and holds it in
+            memory. A browser never receives it: the BFF puts it in an httpOnly cookie, because
+            a value held in JavaScript dies with the page and made every reload spend a refresh
+            token to mint another (research.md D10a).
         refresh_token:
           type: string
           description: |
@@ -345,6 +409,22 @@ components:
         expires_in:
           type: integer
           description: Access-token lifetime in seconds (900).
+
+    Account:
+      type: object
+      required: [id, email, role, plan, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role:
+          type: string
+          enum: [creator, admin]
+          description: Display only. Authorisation reads the role claim in the access token.
+        plan: { type: string, enum: [free] }
+        created_at: { type: string, format: date-time }
+      description: >-
+        `banned_at` is deliberately absent: it is an administrative fact about an account, and a
+        banned account cannot reach this endpoint anyway — the ban revokes its refresh tokens.
 
     Link:
       type: object
@@ -394,3 +474,4 @@ components:
 
 security:
   - bearerAuth: []
+  - cookieAuth: []
