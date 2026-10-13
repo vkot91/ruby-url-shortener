@@ -1,6 +1,25 @@
 {
   "ignored_warnings": [
     {
+      "warning_type": "Unmaintained Dependency",
+      "warning_code": 122,
+      "fingerprint": "98b26f60d776fd41ee6f088c833725145be9aac2d7c5b33780241c273622db42",
+      "check_name": "EOLRails",
+      "message": "Support for Rails 8.0.5.1 ends on 2026-11-07",
+      "file": "Gemfile.lock",
+      "line": 465,
+      "link": "https://brakemanscanner.org/docs/warning_types/unmaintained_dependency/",
+      "code": null,
+      "render_path": null,
+      "location": null,
+      "user_input": null,
+      "confidence": "Medium",
+      "cwe_id": [
+        1104
+      ],
+      "note": "A calendar notice, not a finding about this code: Brakeman starts reporting sixty days before a release line leaves support, and Rails 8.0 leaves it on 2026-11-07. Rails 8.0.5.1 is patched and supported today. Ignored on 2026-10-12 so that an unrelated feature branch is not the place a framework upgrade happens; the fix is moving to Rails 8.1 on a branch of its own, before that date. This entry must be deleted by that upgrade, not carried through it. The fingerprint is tied to the version string, so a patch bump inside 8.0 brings the warning back, which is the intended reminder."
+    },
+    {
       "warning_type": "Redirect",
       "warning_code": 18,
       "fingerprint": "de0738d4ef91cfd783dd7e521693f12bd8c50b3f22331e6737ead4753d429a0e",
@@ -24,5 +43,5 @@
       "note": "Redirecting to a host we do not control is the product. Brakeman is right that this is an open redirect and wrong that it is a defect: a shortener whose redirect refused other hosts would redirect nowhere. What makes it safe is not the redirect but what is allowed to reach the column it reads. Urls::SafetyValidator (D11) refuses any destination that is not http(s), that resolves off the public internet, or that points back at our own short domain, and it runs again on every destination edit (T074) rather than only at creation; Urls::Normalizer canonicalises what it accepts; and the destination is stored, never taken from the request. The other half of the answer is that the response carries Cache-Control: no-store and sets no cookie, so a visitor's browser and session state are untouched by where they are sent. Re-open this if the safety validator is ever bypassed on a write path, or if a destination ever reaches this line from params rather than from the row."
     }
   ],
-  "brakeman_version": "8.0.6"
+  "brakeman_version": "8.1.0"
 }

@@ -1,7 +1,7 @@
 meta {
   name: Refresh
   type: http
-  seq: 5
+  seq: 7
 }
 
 post {
@@ -21,8 +21,8 @@ body:json {
 }
 
 script:pre-request {
-  // Keep the token we are about to spend, so `Refresh - replay a spent token`
-  // has something already-rotated to present.
+  // Keep the token we are about to spend, so the two `Refresh - replay ...`
+  // requests have something already-rotated to present.
   bru.setVar("spentRefreshToken", bru.getVar("refreshToken"));
 }
 

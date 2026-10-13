@@ -39,10 +39,16 @@ Rails.application.routes.draw do
         post "refresh" => "refresh#create"
       end
 
-      # Only `create` in 3A. `index` and `show` arrive with US2 (T063, T106),
-      # `update` and `destroy` with US3 (T075, T077) — listed as they land
-      # rather than drawn now and answering 404 from a missing action.
-      resources :links, only: :create
+      # Who the caller is. Singular and outside `resources` because there is no
+      # collection of accounts a creator may list and no id to address: the
+      # token names the account, and asking for anybody else's is not a route
+      # that exists to be forgotten to authorise.
+      get "me" => "accounts#show"
+
+      # `create` landed in 3A; `index` and `show` arrive with US2 (T063, T106).
+      # `update` and `destroy` follow with US3 (T075, T077) — listed as they
+      # land rather than drawn now and answering 404 from a missing action.
+      resources :links, only: %i[create index show]
 
       namespace :admin do
         # FR-003 surface. Same reasoning: `/admin` is claimed now, not later.

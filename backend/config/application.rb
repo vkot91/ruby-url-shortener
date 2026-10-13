@@ -60,10 +60,11 @@ module Backend
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
-    # No cookie middleware, deliberately. Authentication is bearer-token only
-    # (research.md D10), so nothing in this application can set a cookie even by
-    # accident — which turns the redirect's "no Set-Cookie" guarantee (FR-015,
-    # Principle V) from an assertion into a structural fact.
+    # No cookie middleware, deliberately. The access token is read from a
+    # header or from a request cookie (research.md D10, D10a), and reading one
+    # is Rack parsing a header — nothing in this application can *set* a cookie
+    # even by accident, which turns the redirect's "no Set-Cookie" guarantee
+    # (FR-015, Principle V) from an assertion into a structural fact.
 
     # The short domain the codes are served from. Used to render short_url and,
     # more importantly, to refuse a destination that points back at our own
@@ -119,6 +120,48 @@ module Backend
 
     initializer "backend.redirect_middleware", after: :load_config_initializers do |app|
       app.middleware.insert_before ActionDispatch::Executor, RedirectMiddleware
+    end
+
+    # CORS, and where it sits is the decision (config/initializers/cors.rb holds
+    # the rules and the reasoning for them).
+    #
+    # `insert_after RedirectMiddleware` rather than the generated template's
+    # `insert_before 0`. At position 0 every redirect would enter this
+    # middleware to have an `Origin` header it does not carry checked against a
+    # path it does not match — non-essential synchronous work on the one path
+    # Principle I protects. Here, a cached redirect is answered and returned
+    # before this exists.
+    #
+    # It has to be a separate initializer from the one above, and after it:
+    # `insert_after` resolves its target immediately, so RedirectMiddleware has
+    # to already be in the stack. That also rules out doing this from
+    # config/initializers/cors.rb, which runs earlier.
+    initializer "backend.cors", after: "backend.redirect_middleware" do |app|
+      app.middleware.insert_after RedirectMiddleware, Rack::Cors do
+        allow do
+          origins(*Rails.application.config.x.cors_origins)
+
+          resource "/api/*",
+                   headers: :any,
+                   methods: %i[get post patch delete options],
+                   # On, because the browser's access token is a cookie the BFF
+                   # sets on a domain both origins share (Authentication's
+                   # ACCESS_COOKIE) and the browser will not attach it to a
+                   # cross-origin fetch without this.
+                   #
+                   # Safe only in company: `origins` above names one origin and
+                   # must never become `*` — the two together are what stop any
+                   # other page on the internet reading this API with the
+                   # visitor's own cookie. The browser refuses the combination
+                   # outright, which is a guard rail rather than a plan.
+                   #
+                   # CSRF is the other half, and it is answered by `SameSite=Lax`
+                   # on the cookie itself: a cross-site POST or fetch carries no
+                   # cookie at all, and this API has no state-changing GET for a
+                   # top-level navigation to reach.
+                   credentials: true
+        end
+      end
     end
   end
 end

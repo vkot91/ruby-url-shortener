@@ -200,23 +200,42 @@ Five things landed alongside 3C that the task list did not name:
 
 **Independent Test**: Create a link, open it N times, confirm the dashboard reports N within 30 seconds.
 
-- [ ] T062 [P] [US2] Link serializer exposing `clicks_count` and `short_url` in `backend/app/serializers/link_serializer.rb` per the `Link` schema
-- [ ] T063 [US2] `Api::V1::LinksController#index` with pagination and owner scoping in `backend/app/controllers/api/v1/links_controller.rb` (FR-002, FR-023)
-- [ ] T106 [US2] `Api::V1::LinksController#show` with owner scoping, returning 404 rather than 403 for another account's link, in `backend/app/controllers/api/v1/links_controller.rb` (contracts/openapi.yaml `/links/{id}` GET; needed by the edit form in T080)
-- [ ] T064 [US2] Request spec asserting account B never sees account A's links in `backend/spec/requests/api/v1/links_isolation_spec.rb` (FR-002)
-- [ ] T065 [US2] Integration test asserting the counter reaches N within 30 seconds of the last click in `backend/spec/integration/click_counting_spec.rb` (SC-009)
-- [ ] T066 [US2] Integration test asserting redirects still succeed with Redis stopped in `backend/spec/integration/redis_outage_spec.rb` (SC-008)
-- [ ] T067 [P] [US2] Typed API client in `frontend/src/lib/api.ts` — holds the access token in memory, sends `Authorization: Bearer`, and on a `token_expired` 401 refreshes once through the BFF and retries the original request exactly once (D10)
-- [ ] T118 [US2] BFF route handlers in `frontend/src/app/api/auth/` — sign-in, sign-out, and refresh proxied to Rails, with the refresh token kept in an httpOnly cookie on the Next.js origin and never returned to the browser (D10)
-- [ ] T068 [P] [US2] Sign-up and sign-in pages in `frontend/src/app/(auth)/`, posting to the BFF handlers from T118 rather than to Rails directly (design.md §6.2, canvas 01–02 — note the single indistinguishable failure message required by FR-036)
-- [ ] T107 [P] [US2] TanStack Query provider scoped to the dashboard segment in `frontend/src/app/(dashboard)/providers.tsx` — used for click-count polling only, not as the app's data layer (D15)
+- [X] T062 [P] [US2] Link serializer exposing `clicks_count` and `short_url` in `backend/app/serializers/link_serializer.rb` per the `Link` schema
+- [X] T063 [US2] `Api::V1::LinksController#index` with pagination and owner scoping in `backend/app/controllers/api/v1/links_controller.rb` (FR-002, FR-023)
+- [X] T106 [US2] `Api::V1::LinksController#show` with owner scoping, returning 404 rather than 403 for another account's link, in `backend/app/controllers/api/v1/links_controller.rb` (contracts/openapi.yaml `/links/{id}` GET; needed by the edit form in T080)
+- [X] T064 [US2] Request spec asserting account B never sees account A's links in `backend/spec/requests/api/v1/links_isolation_spec.rb` (FR-002)
+- [X] T065 [US2] Integration test asserting the counter reaches N within 30 seconds of the last click in `backend/spec/integration/click_counting_spec.rb` (SC-009)
+- [X] T066 [US2] Integration test asserting redirects still succeed with Redis stopped in `backend/spec/integration/redis_outage_spec.rb` (SC-008)
+- [X] T067 [P] [US2] Typed API client in `frontend/src/lib/api.ts` — holds no credential: sends the httpOnly access cookie with `credentials: "include"`, and on any 401 refreshes once through the BFF and retries the original request exactly once, signing out if the refresh is refused (D10, as amended by D10a and D10b)
+- [X] T118 [US2] BFF route handlers in `frontend/src/app/api/auth/` — sign-up, sign-in, sign-out, and refresh proxied to Rails, with both tokens kept in httpOnly cookies and neither returned to the browser (D10, as amended by D10a)
+- [X] T068 [P] [US2] Sign-up and sign-in pages in `frontend/src/app/(auth)/`, posting to the BFF handlers from T118 rather than to Rails directly (design.md §6.2, canvas 01–02 — note the single indistinguishable failure message required by FR-036)
+- [X] T107 [P] [US2] TanStack Query provider scoped to the dashboard segment in `frontend/src/app/(dashboard)/providers.tsx` — used for click-count polling only, not as the app's data layer (D15)
 - [X] T122 [P] [US2] Shared presentation components from design.md §7 — `<ShortLink>`, `<CopyButton>`, `<ClickCount>`, `<EmptyState>` — in `frontend/src/components/`, with component tests for the two-second copy success swap and for the tabular-figure column holding width across 0, 8, and 4051 (design.md P2, P3, P4)
-- [ ] T069 [US2] Link list page showing short URL, destination, created date, click count in `frontend/src/app/(dashboard)/links/page.tsx` — table columns, hover, skeleton, empty, error, and pagination per design.md §6.3, built from T122's components (canvas 03–05)
-- [ ] T108 [US2] Poll click counts on a 30-second `refetchInterval` in `frontend/src/app/(dashboard)/links/use-links.ts` (SC-009) — background refetches change the number and nothing else, per design.md P4
-- [ ] T070 [US2] Link creation form with one-click copy in `frontend/src/app/(dashboard)/links/new/page.tsx` — react-hook-form + zod, mapping all six server `error.code` values to field-level errors. Copy for all six, plus the in-place success panel, is fixed in design.md §6.4 (canvas 06–07)
-- [ ] T071 [P] [US2] Component tests for the list and create form in `frontend/tests/`
+- [X] T069 [US2] Link list page showing short URL, destination, created date, click count in `frontend/src/app/(dashboard)/links/page.tsx` — table columns, hover, skeleton, empty, error, and pagination per design.md §6.3, built from T122's components (canvas 03–05)
+- [X] T108 [US2] Poll click counts on a 30-second `refetchInterval` in `frontend/src/app/(dashboard)/links/use-links.ts` (SC-009) — background refetches change the number and nothing else, per design.md P4
+- [X] T070 [US2] Link creation form with one-click copy in `frontend/src/app/(dashboard)/links/new/page.tsx` — react-hook-form + zod, mapping all six server `error.code` values to field-level errors. Copy for all six, plus the in-place success panel, is fixed in design.md §6.4 (canvas 06–07)
+- [X] T071 [P] [US2] Component tests for the list and create form in `frontend/tests/`
 
 **Checkpoint**: US1 and US2 both work independently.
+
+Six things landed alongside US2 that the task list did not name:
+
+- The browser's access token moved from a JavaScript variable to an httpOnly `snip_access` cookie,
+  which `Authentication` reads after the `Authorization` header (research.md D10a;
+  `spec/requests/api/v1/cookie_authentication_spec.rb`). T067 and T118 above are worded as built,
+  not as first planned.
+- `Auth::RefreshTokens::GRACE` — a ten-second window in which a replayed refresh token is a retry
+  rather than theft. Two tabs expiring together were revoking the whole family (D10a).
+- `GET /api/v1/me`, `AccountsController`, and `AccountSerializer`, replacing a readable
+  `snip_account` cookie as the source of the header's email and role (D10b;
+  `spec/requests/api/v1/me_spec.rb`).
+- `rack-cors`, inserted after `RedirectMiddleware` so a cached redirect never enters it, with one
+  named origin and `credentials: true` (`config/application.rb`, `spec/requests/cors_spec.rb`).
+- `frontend/src/middleware.ts` — the route guard, testing for the presence of `snip_refresh` and
+  nothing else — and `SESSION_COOKIE_DOMAIN`, which scopes both cookies to the domain the
+  dashboard and the API share.
+- `spec/requests/api/v1/links_index_spec.rb`, for the pagination clamp and ordering that T063
+  introduced and T064's isolation spec does not cover.
 
 ---
 

@@ -1,0 +1,45 @@
+meta {
+  name: List links - pagination
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/v1/links?per_page=1&page=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  per_page: 1
+  page: 1
+}
+
+tests {
+  test("honours per_page", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.body.links).to.have.lengthOf(1);
+    expect(res.body.pagination.per_page).to.equal(1);
+  });
+
+  test("still reports the full total, so the client can size the pager", function () {
+    expect(res.body.pagination.total).to.be.above(1);
+  });
+}
+
+docs {
+  The `Pagination` schema in contracts/openapi.yaml.
+
+  `per_page` is clamped, never refused: the maximum is 100, and asking for 500
+  returns 100 with `pagination.per_page` saying so rather than a 422 the client
+  has to special-case. Anything that is not a positive integer — `0`, `abc`, a
+  missing parameter — is the 25 default, because a dashboard that refused to
+  show somebody their own links over a stray query string would be trading a
+  working screen for a technicality.
+
+  Paste these in by hand to see both:
+
+      GET {{baseUrl}}/api/v1/links?per_page=500   → pagination.per_page = 100
+      GET {{baseUrl}}/api/v1/links?per_page=abc   → pagination.per_page = 25
+      GET {{baseUrl}}/api/v1/links?page=99        → links: [], total unchanged
+}

@@ -1,0 +1,80 @@
+meta {
+  name: Me
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/me
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("answers with the caller's account", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.body.account.email).to.equal(bru.getEnvVar("email"));
+  });
+
+  test("names the role the dashboard branches on", function () {
+    expect(res.body.account.role).to.be.oneOf(["creator", "admin"]);
+  });
+
+  test("carries an id and a plan, and nothing about bans", function () {
+    expect(res.body.account.id).to.be.a("string").and.not.be.empty;
+    expect(res.body.account.plan).to.equal("free");
+    expect(res.body.account).to.not.have.property("banned_at");
+  });
+
+  test("carries no password digest under any name", function () {
+    expect(JSON.stringify(res.body)).to.not.match(/\$2[aby]\$/);
+  });
+
+  test("sets no cookie — nothing in this API can", function () {
+    expect(res.getHeader("set-cookie")).to.be.undefined;
+  });
+}
+
+docs {
+  FR-001. Who the caller is, read from the row rather than from the token.
+
+  ## Why this endpoint exists
+
+  The dashboard needs an address for its header and a role to decide whether to
+  draw the Admin item. Both were briefly carried to the browser in a readable
+  `snip_account` cookie the Next.js BFF wrote at sign-in, and that was wrong
+  twice over:
+
+  - it put a person's email address in a cookie attached to requests that had no
+    use for it, including — on a machine where the API and the short domain
+    share a host — a visitor following a short link;
+  - it froze the answer at the moment the session opened. An address corrected
+    or a role granted afterwards stayed invisible until the session was closed
+    and opened again, because nothing rewrote the cookie.
+
+  A request answers both objections, so the cookie was deleted. Nothing in the
+  browser now describes the session except the two httpOnly credentials
+  themselves.
+
+  ## `role` here is display, not authority
+
+  Authorisation reads the `role` claim inside the signed access token, on every
+  request. That claim is only rewritten at a refresh, so for up to fifteen
+  minutes this endpoint and the token may disagree — a freshly promoted admin
+  sees the Admin item and gets 403 behind it until the token catches up.
+
+  That is safe only while nothing authorises on this value, which is why the
+  serializer's field list is asserted in `spec/requests/api/v1/me_spec.rb` and
+  why `AccountSerializer` says so in a comment. Do not add a permissions array
+  here.
+
+  ## Variations worth pasting in by hand
+
+      (no Authorization header)          → 401 unauthenticated
+      Authorization: Bearer nonsense     → 401 unauthenticated
+      (a token older than fifteen minutes) → 401 token_expired
+
+  The last one is the code the whole client design rests on: `token_expired`
+  means "refresh and retry", and this is usually the first request a dashboard
+  makes, so it is where the browser most often meets it.
+}

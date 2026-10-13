@@ -68,10 +68,19 @@ RSpec.describe Auth::RefreshTokens do
 
   # This is the part that makes rotation worth doing. Without it, a stolen token
   # is used once and nobody ever finds out.
+  #
+  # Every example here replays the token *after* the grace window, because that
+  # is where theft actually happens: a copy taken from a log, a backup, or a
+  # proxy is not spent in the same ten seconds as the original. The window
+  # itself is the next describe block.
+  def after_grace = travel(described_class::GRACE + 1.second)
+
   describe "reuse detection" do
     it "revokes the whole family when an already-exchanged token comes back" do
       original = described_class.issue(account: account)
       successor = described_class.rotate(original.token)
+
+      after_grace
 
       expect { described_class.rotate(original.token) }.to raise_error(described_class::Reused)
 
@@ -84,6 +93,8 @@ RSpec.describe Auth::RefreshTokens do
       original = described_class.issue(account: account)
       successor = described_class.rotate(original.token)
 
+      after_grace
+
       suppress(described_class::Reused) { described_class.rotate(original.token) }
 
       expect { described_class.rotate(successor.token) }.to raise_error(described_class::Invalid)
@@ -94,9 +105,70 @@ RSpec.describe Auth::RefreshTokens do
       compromised = described_class.issue(account: account)
       described_class.rotate(compromised.token)
 
+      after_grace
+
       expect { described_class.rotate(compromised.token) }.to raise_error(described_class::Reused)
 
       expect(other_device.reload).not_to be_revoked
+    end
+  end
+
+  # The other cause of "presented twice", and the reason the window exists.
+  #
+  # Two browser tabs whose access tokens expire in the same second send the same
+  # refresh token milliseconds apart. Before this window, the second one revoked
+  # the family and signed the person out of both — a bug that fired on ordinary
+  # use and was indistinguishable, from the server's side, from the attack it
+  # was meant to catch.
+  describe "the rotation grace window" do
+    it "treats a replay within the window as the same client retrying" do
+      original = described_class.issue(account: account)
+      described_class.rotate(original.token)
+
+      expect { described_class.rotate(original.token) }.not_to raise_error
+    end
+
+    it "keeps the session alive rather than revoking the family" do
+      original = described_class.issue(account: account)
+      first = described_class.rotate(original.token)
+
+      second = described_class.rotate(original.token)
+
+      expect(first.reload).not_to be_revoked
+      expect(second.reload).not_to be_revoked
+      expect(second.family_id).to eq(first.family_id)
+    end
+
+    # The cost, stated rather than discovered: only the digest is stored, so the
+    # first successor's raw string cannot be handed back and a second one is
+    # issued instead. For up to ten seconds a family carries two live tokens.
+    it "issues a second successor, since the first one's raw token is unrecoverable" do
+      original = described_class.issue(account: account)
+      first = described_class.rotate(original.token)
+      second = described_class.rotate(original.token)
+
+      expect(second.token).not_to eq(first.token)
+      expect(RefreshToken.where(family_id: first.family_id, revoked_at: nil, used_at: nil).count).to eq(2)
+    end
+
+    it "closes exactly at the boundary, so the window cannot be widened by waiting" do
+      original = described_class.issue(account: account)
+      described_class.rotate(original.token)
+
+      after_grace
+
+      expect { described_class.rotate(original.token) }.to raise_error(described_class::Reused)
+    end
+
+    # The window forgives a replay of a *used* token. It must not forgive one of
+    # a token the family already revoked, or a theft detected a minute ago would
+    # be re-admitted by a retry ten seconds later.
+    it "never forgives a token whose family has already been revoked" do
+      original = described_class.issue(account: account)
+      described_class.rotate(original.token)
+      described_class.revoke_family(original.family_id)
+
+      expect { described_class.rotate(original.token) }.to raise_error(described_class::Invalid)
     end
   end
 

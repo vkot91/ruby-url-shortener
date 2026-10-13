@@ -1,0 +1,92 @@
+meta {
+  name: List links
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/v1/links
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("lists the caller's links", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.body.links).to.be.an("array");
+  });
+
+  test("returns the Link schema and nothing beyond it", function () {
+    const link = res.body.links[0];
+
+    expect(Object.keys(link).sort()).to.deep.equal([
+      "clicks_count",
+      "code",
+      "created_at",
+      "destination_url",
+      "id",
+      "name",
+      "short_url",
+    ]);
+  });
+
+  test("never returns another account's links (FR-002)", function () {
+    const codes = res.body.links.map((link) => link.code);
+
+    // Both belong to `rival` in backend/spec/fixtures/links.yml.
+    expect(codes).to.not.include("riv4l99");
+    expect(codes).to.not.include("dup7lic");
+  });
+
+  test("hides the soft-deleted link while its statistics survive (FR-028)", function () {
+    const codes = res.body.links.map((link) => link.code);
+
+    expect(codes).to.not.include("gone404");
+  });
+
+  test("returns the newest link first", function () {
+    const created = res.body.links.map((link) => Date.parse(link.created_at));
+    const descending = [...created].sort((a, b) => b - a);
+
+    expect(created).to.deep.equal(descending);
+  });
+
+  test("reports the account's total, not the size of this page", function () {
+    expect(res.body.pagination.page).to.equal(1);
+    expect(res.body.pagination.per_page).to.equal(25);
+    expect(res.body.pagination.total).to.be.a("number");
+  });
+
+  test("carries the click count the dashboard renders (SC-009)", function () {
+    const popular = res.body.links.find((link) => link.code === "pop9lar");
+
+    expect(popular.clicks_count).to.be.at.least(7);
+  });
+}
+
+docs {
+  FR-002 and FR-023. The dashboard's list, and the request the click-count poll
+  repeats every 30 seconds (SC-009).
+
+  The ownership scope is a property of the query, not a check after it: the
+  controller reads from `Link.active.where(account_id: <the token's account>)`,
+  so another account's link cannot be reached by any action in this controller
+  rather than being reached and then refused.
+
+  `pagination.total` counts the caller's active links and is what the dashboard
+  renders as "12 of 50 links used" (FR-004). It is scoped for the same reason
+  the rows are — an honest total of everybody's links would leak how much a
+  rival had published.
+
+  Deliberately absent from every row: `account_id`, `banned_at`, `deleted_at`.
+  Those belong to `AdminLink`, a different schema for a different audience
+  (FR-034).
+
+  Unthrottled, unlike `POST /links`. A limit low enough to matter would break
+  the 30-second poll it was protecting.
+
+  Variations worth pasting in by hand:
+
+      GET {{baseUrl}}/api/v1/links?page=2
+      GET {{baseUrl}}/api/v1/links?per_page=1
+}

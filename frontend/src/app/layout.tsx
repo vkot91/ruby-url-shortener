@@ -28,8 +28,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${figtree.variable} ${jetbrainsMono.variable} antialiased`}>
+    <html
+      lang="en"
+      className={`${figtree.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="antialiased">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

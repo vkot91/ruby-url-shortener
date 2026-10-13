@@ -171,41 +171,54 @@ substitution.
 
 ### 3.2 Dark theme
 
-Dark is a near-neutral charcoal: surfaces carry about 40% of the light theme's chroma, brand colours
-keep theirs. The primary lightens to `0.72 L` because terracotta at `0.555 L` on a dark ground fails
-text contrast.
+Dark is a **warm espresso**, not a neutral charcoal. The neutrals keep the same 55–63° hue family as
+the light theme and carry roughly twice its chroma (`0.013–0.030` against light's `0.006–0.014`), so
+the dark surfaces read as unlit paper rather than as slate. This is the opposite of the usual advice
+to desaturate in dark mode, and it is deliberate: §1 makes warmth a checkable property, and a
+neutralised dark theme silently dropped it on the two surfaces that have one.
+
+The foreground is also much brighter than a conventional dark-mode body colour (`0.956 L`, near
+white) because the espresso ground is warmer and lighter than a charcoal one; a `0.87 L` foreground
+on it lost the crispness the light theme has.
+
+Brand colours are unchanged from the previous revision. The primary still lightens to `0.719 L`
+because terracotta at `0.555 L` on a dark ground fails text contrast.
 
 | Token | OKLCH | Hex | Role |
 |---|---|---|---|
-| `--background` | `0.175 0.005 58` | `#12100e` | Page ground — near-neutral charcoal |
-| `--foreground` | `0.87 0.004 85` | `#d5d4d1` | Body text |
-| `--card` | `0.225 0.006 58` | `#1e1b19` | Raised surface |
-| `--card-foreground` | `0.87 0.004 85` | `#d5d4d1` | |
-| `--popover` | `0.225 0.006 58` | `#1e1b19` | |
-| `--popover-foreground` | `0.87 0.004 85` | `#d5d4d1` | |
-| `--primary` | `0.72 0.145 48` | `#ec854d` | Lightened terracotta — not neutralised |
+| `--background` | `0.184 0.013 55` | `#17110d` | Page ground — warm espresso |
+| `--foreground` | `0.956 0.009 85` | `#f3f0ea` | Body text |
+| `--card` | `0.236 0.013 62` | `#231d18` | Raised surface |
+| `--card-foreground` | `0.956 0.009 85` | `#f3f0ea` | |
+| `--popover` | `0.236 0.013 62` | `#231d18` | |
+| `--popover-foreground` | `0.956 0.009 85` | `#f3f0ea` | |
+| `--primary` | `0.719 0.145 48` | `#ec854d` | Lightened terracotta — not neutralised |
 | `--primary-hover` | `0.78 0.135 50` | `#fc9c64` | Primary hover |
-| `--primary-foreground` | `0.20 0.025 48` | `#1f130c` | |
-| `--secondary` | `0.29 0.007 58` | `#2e2b28` | |
-| `--secondary-foreground` | `0.87 0.004 85` | `#d5d4d1` | |
-| `--muted` | `0.275 0.006 58` | `#2a2725` | |
-| `--muted-foreground` | `0.735 0.007 75` | `#aca9a4` | |
-| `--accent` | `0.33 0.013 58` | `#3b342f` | |
-| `--accent-foreground` | `0.875 0.004 85` | `#d7d6d3` | |
-| `--destructive` | `0.665 0.185 25` | `#f05b57` | |
-| `--destructive-foreground` | `0.16 0.02 30` | `#150a08` | |
-| `--success` | `0.735 0.125 155` | `#61c086` | |
-| `--success-foreground` | `0.16 0.02 30` | `#150a08` | |
-| `--border` | `0.32 0.006 58` | `#353230` | |
-| `--input-border` | `0.525 0.008 60` | `#6e6966` | |
-| `--ring` | `0.72 0.145 48` | `#ec854d` | |
+| `--primary-foreground` | `0.201 0.024 51` | `#1f130c` | |
+| `--secondary` | `0.287 0.015 63` | `#302923` | |
+| `--secondary-foreground` | `0.956 0.009 85` | `#f3f0ea` | |
+| `--muted` | `0.287 0.015 63` | `#302923` | Table header, inert fill |
+| `--muted-foreground` | `0.735 0.016 77` | `#afa89e` | |
+| `--accent` | `0.34 0.03 56` | `#443429` | Hover ground, selected row, badge ground |
+| `--accent-foreground` | `0.959 0.01 82` | `#f5f1ea` | |
+| `--destructive` | `0.666 0.185 25` | `#f05b57` | |
+| `--destructive-foreground` | `0.16 0.02 31` | `#150a08` | |
+| `--success` | `0.734 0.125 155` | `#61c086` | |
+| `--success-foreground` | `0.16 0.02 31` | `#150a08` | |
+| `--border` | `0.33 0.014 63` | `#3b342e` | |
+| `--input-border` | `0.539 0.019 58` | `#776c64` | |
+| `--ring` | `0.719 0.145 48` | `#ec854d` | |
+
+`--secondary` and `--muted` hold the same value in dark. The canvas draws a single warm step at this
+level, and no MVP screen places a secondary button on a muted ground, so splitting them would be an
+invented distinction rather than an observed one. Light theme keeps them distinct (§3.1).
 
 ### 3.3 Why `--border` and `--input-border` are separate
 
 WCAG 1.4.11 requires 3:1 for boundaries that are the only means of identifying a control. It does
-not require it for decorative rules. `--border` at 1.31:1 (light) and 1.49:1 (dark) is a
-deliberately quiet card edge and would be wrong for a text input; `--input-border` at 3.50:1 and
-3.51:1 is what every input, select, textarea, and outline-variant button uses.
+not require it for decorative rules. `--border` at 1.32:1 (light) and 1.53:1 (dark) is a
+deliberately quiet card edge and would be wrong for a text input; `--input-border` at 3.49:1 and
+3.66:1 is what every input, select, textarea, and outline-variant button uses.
 
 Collapsing the two — which shadcn's default palette does — either makes card edges shout or makes
 form fields fail. Keeping both is the reason this palette needs one extra token.
@@ -217,25 +230,27 @@ formula. Threshold is 4.5:1 for text and 3:1 for non-text boundaries.
 
 | Pair | Light | Dark |
 |---|---|---|
-| foreground on background | 15.16 | 12.80 |
-| foreground on card | 15.81 | 11.55 |
-| muted-foreground on background | 5.65 | 8.08 |
-| muted-foreground on card | 5.90 | 7.28 |
-| muted-foreground on muted | 5.17 | 6.32 |
-| primary-foreground on primary | 4.93 | 6.99 |
-| primary as text on background | 4.87 | 7.29 |
-| primary as text on card | 5.07 | 6.58 |
-| primary-hover as text on background | 6.96 | 9.11 |
-| primary-foreground on primary-hover | 7.03 | 8.73 |
-| destructive as text on background | 5.27 | 5.71 |
+| foreground on background | 15.16 | 16.45 |
+| foreground on card | 15.81 | 14.65 |
+| muted-foreground on background | 5.65 | 7.94 |
+| muted-foreground on card | 5.90 | 7.08 |
+| muted-foreground on muted | 5.17 | 6.08 |
+| primary-foreground on primary | 4.93 | 6.94 |
+| primary as text on background | 4.87 | 7.15 |
+| primary as text on card | 5.07 | 6.37 |
+| primary-hover as text on background | 6.96 | 8.98 |
+| primary-foreground on primary-hover | 7.03 | 8.71 |
+| destructive as text on background | 5.27 | 5.65 |
 | destructive-foreground on destructive | 5.35 | 5.86 |
-| success as text on background | 5.33 | 8.51 |
-| input-border on background | 3.50 | 3.51 |
-| ring on background | 4.87 | 7.29 |
+| success as text on background | 5.33 | 8.37 |
+| input-border on background | 3.49 | 3.66 |
+| ring on background | 4.87 | 7.15 |
 
 **One rule falls out of this table**: `--primary` as *text* on `--muted` measures 4.45:1 in light
 theme and therefore fails. Primary-colored text is permitted on `--background` and `--card` only.
-On a muted ground — the table header, a filled input — use `--foreground`.
+On a muted ground — the table header, a filled input — use `--foreground`. The rule is kept in dark
+theme too, where the same pair now measures 5.47:1 and would pass: one rule that holds in both
+themes is cheaper to honour than a rule that is conditional on the theme.
 
 ---
 
@@ -632,9 +647,12 @@ be drawn. They are kept, and this table is what a regeneration works from.
 | 12 | Admin link search + health tiles | light | §6.8 | T095 |
 | 13 | Ban confirmation + queue empty state | light | §6.7 | T094 |
 | 14 | Not found (404), system fonts | light | §6.9 | T037 |
-| 15 | Safety warning (403), system fonts | light | §6.9 | T084 |
+| 15 | Safety warning (403), system fonts | **dark** | §6.9 | T084 |
 
-Artboards 14 and 15 render at 640×832 and deliberately load no webfont, per §8.
+Artboards 14 and 15 render at 640×832 and deliberately load no webfont, per §8. They are drawn in
+opposite themes on purpose — 14 light, 15 dark — because §6.9 gives both pages a
+`prefers-color-scheme` variant rather than a class-based one, and drawing one of each is what
+proves the espresso ground in §3.2 survives without the app's token layer.
 
 **Sample data to use**, so mockups are comparable to each other:
 
@@ -711,6 +729,67 @@ rather than accepted on sight:
 - **T122** — Build the shared components from §7 — `<ShortLink>`, `<CopyButton>`, `<ClickCount>`,
   `<EmptyState>` — with component tests for the copy success swap and the tabular-figure column
   width. Phase 4, before T069.
+
+### Canvas re-read, checked 2026-09-03
+
+The canvas was read back through the Claude Design MCP a second time and diffed against §3 hex by
+hex. It had been revised since the 2026-08-27 check, and the revision was accepted into this
+document rather than reverted — the exception to the §10 rule that this document wins on tokens,
+taken deliberately and recorded here.
+
+- **Light theme: unchanged and fully conformant.** Every hex across artboards 01–03, 05–10 and
+  12–14 appears in §3.1. No drift, no additions.
+- **Dark theme: re-hued.** Artboards 04, 11 and 15 replaced the near-neutral charcoal ramp with a
+  warm espresso one — `#12100e → #17110d` (background), `#1e1b19 → #231d18` (card),
+  `#2a2725 → #302923` (muted), `#353230 → #3b342e` (border), `#6e6966 → #776c64` (input-border),
+  `#aca9a4 → #afa89e` (muted-foreground), `#3b342f → #443429` (accent), and a much brighter
+  foreground, `#d5d4d1 → #f3f0ea`. §3.2 now carries these values and its prose was rewritten: the
+  old "40% of the light theme's chroma" claim was the thing the revision contradicted.
+- **Brand colours were not touched.** `--primary` `#ec854d`, `--primary-foreground` `#1f130c`,
+  `--destructive` `#f05b57` and `--destructive-foreground` `#150a08` are identical across both
+  reads, which is what makes this a neutral re-hue rather than a new palette.
+- **Every new dark pair was re-measured**, not assumed to still pass. §3.4's dark column is
+  recomputed; all fifteen pairs clear their threshold, and the margins improved in twelve of them
+  because the brighter foreground and warmer ground both push contrast up.
+- **Fonts were already correct** and needed no change: the canvas loads Figtree 400/500/600 and
+  JetBrains Mono 400/500/600, exactly what §4.1 specifies and what `layout.tsx` already binds
+  through `next/font/google`.
+- **Artboard 15 is drawn dark**, where §10 had recorded it as light. The table is corrected. This
+  is a labelling fix, not a design change — §6.9 always gave that page a `prefers-color-scheme`
+  variant.
+- `--success` `#61c086`, `--success-foreground` and `--primary-hover` `#fc9c64` remain undrawn in
+  dark on the canvas, as at the first check. They are specified and carried forward unchanged.
+- The canvas's own intro paragraph says "Fourteen artboards" while fifteen are present. Cosmetic
+  defect in the canvas caption, no effect on any token; noted so the next reader does not count
+  twice.
+
+**T120 was re-applied** as part of this check: the `.dark` block in `frontend/src/app/globals.css`
+now carries the espresso ramp. The `:root` block was not touched, because light theme never drifted.
+
+**Two typography defects were found in the same pass**, both of which made the running app differ
+from every artboard regardless of which tokens §3 held:
+
+- `--font-figtree` and `--font-jetbrains-mono` were declared by the `next/font` classes on `<body>`,
+  while `html { font-family: var(--font-figtree), … }` consumed them one level up. A `var()` that
+  resolves to nothing makes the whole declaration invalid at computed-value time, so the app fell
+  back to the browser's default UI font and **rendered no Figtree at all**. Mono was unaffected,
+  because `font-mono` is only ever applied to elements inside `body` — which is why short codes
+  looked right and everything around them did not. The variables now sit on `<html>`.
+- The shadcn primitives installed by T121 kept Tailwind's stock type ramp — `text-xs` (12px),
+  `text-sm` (14px), `text-base` (16px) — in 23 places across `button`, `label`, `badge`, `input`,
+  `table`, `card`, `dialog`, `dropdown-menu` and `tooltip`. None of those three sizes exists in
+  §4.2. They are now mapped onto the scale: controls and dialog body to `text-body` (15/24), labels,
+  table headers, badges and small buttons to `text-label` (13/18), table and card body copy to
+  `text-body-sm` (13/20), card and dialog titles to `text-h2` (18/26) at weight 600.
+
+Verified in a headless browser against artboard 01 rather than by reading the stylesheet: computed
+styles are Figtree throughout, label 13px/18px/500, button 15px/24px/500, input 15px/24px/400,
+wordmark 32px/40px/600 — each the canvas value.
+
+**Still divergent, and not addressed here**: control geometry. The canvas draws inputs and primary
+buttons at 44px with 12/16px padding; shadcn's stock `h-8`/`h-9` render them at 32px and 36px with
+4/10px. That is a §5.1 question rather than a §4 one, and it is the next thing that will read as
+"not the same design".
 
 ### Tasks this document constrains
 
