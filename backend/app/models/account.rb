@@ -29,6 +29,14 @@ class Account < ApplicationRecord
   # however the ban was applied — admin endpoint, console, or rake task.
   after_update_commit :revoke_refresh_tokens, if: :saved_change_to_banned_at?
 
+  # FR-018, D14 (2026-09-03 amendment). Every cached `link:<code>` of this
+  # account carries the account-banned flag as it was when cached, so a ban or
+  # an unban drops them all. The codes come from Postgres, not from the
+  # `account:<id>:codes` set, which loses exactly the hottest codes. Redis
+  # errors propagate for the same reason as Link#invalidate_cache: a ban that
+  # leaves cached redirects serving is the failure Principle IV forbids.
+  after_update_commit :invalidate_link_cache, if: :saved_change_to_banned_at?
+
   # There is deliberately no `uniqueness: true` on email. A validation would be
   # a check-then-write with a window in it; the unique index has no window, so
   # registration attempts the insert and translates the violation (Principle III).
@@ -50,6 +58,14 @@ class Account < ApplicationRecord
   # Unbanning does not resurrect the old tokens; the account signs in again.
   def revoke_refresh_tokens
     Auth::RefreshTokens.revoke_all_for(self)
+  end
+
+  def invalidate_link_cache
+    links.in_batches(of: 1_000) do |batch|
+      keys = batch.pluck(:code).map { |code| Cache::LinkCache.key(code) }
+
+      REDIS.with { |redis| redis.del(*keys) }
+    end
   end
 end
 
